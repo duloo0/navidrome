@@ -125,6 +125,12 @@ const AlbumTableView = ({
           className={classes.ratingField}
         />
       ),
+      lastfmListeners: isDesktop && (
+        <NumberField source="lastfmListeners" sortByOrder={'DESC'} />
+      ),
+      lastfmPlaycount: isDesktop && (
+        <NumberField source="lastfmPlaycount" sortByOrder={'DESC'} />
+      ),
       createdAt: isDesktop && <DateField source="createdAt" showTime />,
     }
   }, [classes.ratingField, isDesktop])
@@ -132,7 +138,7 @@ const AlbumTableView = ({
   const columns = useSelectedFields({
     resource: 'album',
     columns: toggleableFields,
-    defaultOff: ['createdAt', 'size', 'mood'],
+    defaultOff: ['createdAt', 'size', 'mood', 'lastfmListeners', 'lastfmPlaycount'],
   })
 
   return isXsmall ? (

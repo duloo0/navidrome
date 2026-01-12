@@ -95,6 +95,21 @@ func (c *client) artistGetTopTracks(ctx context.Context, name string, limit int)
 	return &response.TopTracks, nil
 }
 
+func (c *client) trackGetInfo(ctx context.Context, trackName string, artistName string, mbid string) (*TrackInfo, error) {
+	params := url.Values{}
+	params.Add("method", "track.getInfo")
+	params.Add("track", trackName)
+	params.Add("artist", artistName)
+	if mbid != "" {
+		params.Add("mbid", mbid)
+	}
+	response, err := c.makeRequest(ctx, http.MethodGet, params, false)
+	if err != nil {
+		return nil, err
+	}
+	return &response.TrackInfo, nil
+}
+
 func (c *client) GetToken(ctx context.Context) (string, error) {
 	params := url.Values{}
 	params.Add("method", "auth.getToken")

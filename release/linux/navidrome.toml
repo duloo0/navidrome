@@ -1,2 +1,9 @@
 DataFolder = "/var/lib/navidrome"
 MusicFolder = "/opt/navidrome/music"
+EnableExternalServices = true
+# Last.fm configuration
+[LastFM]
+Enabled = true
+ApiKey = "f150c378238bf08b436a6ba871261312"
+Secret = "509e993e520a1c0071e7ffeea852cd0e"
+Language = "en"

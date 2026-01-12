@@ -30,9 +30,17 @@ type dbAlbum struct {
 	Participants string `structs:"-" json:"-"`
 	Tags         string `structs:"-" json:"-"`
 	FolderIDs    string `structs:"-" json:"-"`
+	// These are necessary to map the correct names (lastfm_*) to the correct fields (LastFM*)
+	// without using `db` struct tags in the model.Album struct
+	LastfmListeners int64 `structs:"-" json:"-"`
+	LastfmPlaycount int64 `structs:"-" json:"-"`
 }
 
 func (a *dbAlbum) PostScan() error {
+	// Map lastfm fields from db column names to model field names
+	a.Album.LastFMListeners = a.LastfmListeners
+	a.Album.LastFMPlaycount = a.LastfmPlaycount
+
 	var err error
 	if a.Discs != "" {
 		if err = json.Unmarshal([]byte(a.Discs), &a.Album.Discs); err != nil {

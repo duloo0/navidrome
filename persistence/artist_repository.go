@@ -30,6 +30,10 @@ type dbArtist struct {
 	*model.Artist    `structs:",flatten"`
 	SimilarArtists   string `structs:"-" json:"-"`
 	LibraryStatsJSON string `structs:"-" json:"-"`
+	// These are necessary to map the correct names (lastfm_*) to the correct fields (LastFM*)
+	// without using `db` struct tags in the model.Artist struct
+	LastfmListeners int64 `structs:"-" json:"-"`
+	LastfmPlaycount int64 `structs:"-" json:"-"`
 }
 
 type dbSimilarArtist struct {
@@ -38,6 +42,10 @@ type dbSimilarArtist struct {
 }
 
 func (a *dbArtist) PostScan() error {
+	// Map lastfm fields from db column names to model field names
+	a.Artist.LastFMListeners = a.LastfmListeners
+	a.Artist.LastFMPlaycount = a.LastfmPlaycount
+
 	a.Artist.Stats = make(map[model.Role]model.ArtistStats)
 
 	if a.LibraryStatsJSON != "" {

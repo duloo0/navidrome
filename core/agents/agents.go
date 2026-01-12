@@ -393,6 +393,30 @@ func (a *Agents) GetArtistPopularity(ctx context.Context, id, name, mbid string)
 	return nil, ErrNotFound
 }
 
+func (a *Agents) GetTrackPopularity(ctx context.Context, trackName, artistName, mbid string) (*TrackInfo, error) {
+	start := time.Now()
+	for _, enabledAgent := range a.getEnabledAgentNames() {
+		ag := a.getAgent(enabledAgent)
+		if ag == nil {
+			continue
+		}
+		if utils.IsCtxDone(ctx) {
+			break
+		}
+		retriever, ok := ag.(TrackPopularityRetriever)
+		if !ok {
+			continue
+		}
+		info, err := retriever.GetTrackPopularity(ctx, trackName, artistName, mbid)
+		if err == nil && info != nil {
+			log.Debug(ctx, "Got Track Popularity", "agent", ag.AgentName(), "track", trackName, "artist", artistName,
+				"listeners", info.Listeners, "playcount", info.Playcount, "elapsed", time.Since(start))
+			return info, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
 var _ Interface = (*Agents)(nil)
 var _ ArtistMBIDRetriever = (*Agents)(nil)
 var _ ArtistURLRetriever = (*Agents)(nil)
@@ -403,3 +427,4 @@ var _ ArtistTopSongsRetriever = (*Agents)(nil)
 var _ ArtistPopularityRetriever = (*Agents)(nil)
 var _ AlbumInfoRetriever = (*Agents)(nil)
 var _ AlbumImageRetriever = (*Agents)(nil)
+var _ TrackPopularityRetriever = (*Agents)(nil)

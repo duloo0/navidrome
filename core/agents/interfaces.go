@@ -88,6 +88,18 @@ type ArtistPopularityRetriever interface {
 	GetArtistPopularity(ctx context.Context, id, name, mbid string) (*ArtistInfo, error)
 }
 
+// TrackInfo contains track metadata with popularity info
+type TrackInfo struct {
+	Name      string
+	MBID      string
+	Listeners int64
+	Playcount int64
+}
+
+type TrackPopularityRetriever interface {
+	GetTrackPopularity(ctx context.Context, trackName, artistName, mbid string) (*TrackInfo, error)
+}
+
 var Map map[string]Constructor
 
 func Register(name string, init Constructor) {

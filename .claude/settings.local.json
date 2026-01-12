@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(where go:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}

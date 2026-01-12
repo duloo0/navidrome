@@ -12,7 +12,7 @@ import {
 import subsonic from '../subsonic'
 import AlbumGridView from '../album/AlbumGridView'
 import MobileArtistDetails from './MobileArtistDetails'
-import DesktopArtistDetails from './DesktopArtistDetails'
+import ArtistHero from './ArtistHero'
 import { useAlbumsPerPage, useResourceRefresh, Title } from '../common/index.js'
 import ArtistActions from './ArtistActions'
 import { makeStyles } from '@material-ui/core'
@@ -57,6 +57,11 @@ const ArtistDetails = (props) => {
     artistInfo?.biography?.replace(new RegExp('<.*>', 'g'), '') ||
     record.biography
 
+  // Get album and song counts from stats
+  const stats = record?.stats?.['maincredit'] || {}
+  const albumCount = stats.albumCount || 0
+  const songCount = stats.songCount || 0
+
   useEffect(() => {
     subsonic
       .getArtistInfo(record.id)
@@ -72,13 +77,16 @@ const ArtistDetails = (props) => {
       })
   }, [record.id])
 
-  const component = isDesktop ? DesktopArtistDetails : MobileArtistDetails
+  // Use ArtistHero for desktop, MobileArtistDetails for mobile
+  const component = isDesktop ? ArtistHero : MobileArtistDetails
   return (
     <>
       {createElement(component, {
         artistInfo,
         record,
         biography,
+        albumCount,
+        songCount,
       })}
     </>
   )

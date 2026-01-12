@@ -5,6 +5,7 @@ type Response struct {
 	SimilarArtists SimilarArtists `json:"similarartists"`
 	TopTracks      TopTracks      `json:"toptracks"`
 	Album          Album          `json:"album"`
+	TrackInfo      TrackInfo      `json:"track"`
 	Error          int            `json:"error"`
 	Message        string         `json:"message"`
 	Token          string         `json:"token"`
@@ -60,6 +61,15 @@ type Description struct {
 type Track struct {
 	Name string `json:"name"`
 	MBID string `json:"mbid"`
+}
+
+// TrackInfo is the response from track.getInfo API
+type TrackInfo struct {
+	Name      string `json:"name"`
+	MBID      string `json:"mbid"`
+	URL       string `json:"url"`
+	Listeners string `json:"listeners"`
+	Playcount string `json:"playcount"`
 }
 
 type TopTracks struct {

@@ -191,6 +191,8 @@ type OpenSubsonicChild struct {
 	Contributors       Array[Contributor]  `xml:"contributors,omitempty"            json:"contributors"`
 	DisplayComposer    string              `xml:"displayComposer,attr,omitempty"    json:"displayComposer"`
 	ExplicitStatus     string              `xml:"explicitStatus,attr,omitempty"     json:"explicitStatus"`
+	LastFMListeners    int64               `xml:"lastfmListeners,attr,omitempty"    json:"lastfmListeners,omitempty"`
+	LastFMPlaycount    int64               `xml:"lastfmPlaycount,attr,omitempty"    json:"lastfmPlaycount,omitempty"`
 }
 
 type Songs struct {
@@ -243,9 +245,11 @@ type ArtistID3 struct {
 
 type OpenSubsonicArtistID3 struct {
 	// OpenSubsonic extensions
-	MusicBrainzId string        `xml:"musicBrainzId,attr,omitempty" json:"musicBrainzId"`
-	SortName      string        `xml:"sortName,attr,omitempty"      json:"sortName"`
-	Roles         Array[string] `xml:"roles,omitempty"              json:"roles"`
+	MusicBrainzId   string        `xml:"musicBrainzId,attr,omitempty"   json:"musicBrainzId"`
+	SortName        string        `xml:"sortName,attr,omitempty"        json:"sortName"`
+	Roles           Array[string] `xml:"roles,omitempty"                json:"roles"`
+	LastFMListeners int64         `xml:"lastfmListeners,attr,omitempty" json:"lastfmListeners,omitempty"`
+	LastFMPlaycount int64         `xml:"lastfmPlaycount,attr,omitempty" json:"lastfmPlaycount,omitempty"`
 }
 
 type AlbumID3 struct {
@@ -282,6 +286,8 @@ type OpenSubsonicAlbumID3 struct {
 	DisplayArtist       string              `xml:"displayArtist,attr,omitempty"  json:"displayArtist"`
 	ExplicitStatus      string              `xml:"explicitStatus,attr,omitempty" json:"explicitStatus"`
 	Version             string              `xml:"version,attr,omitempty"        json:"version"`
+	LastFMListeners     int64               `xml:"lastfmListeners,attr,omitempty" json:"lastfmListeners,omitempty"`
+	LastFMPlaycount     int64               `xml:"lastfmPlaycount,attr,omitempty" json:"lastfmPlaycount,omitempty"`
 }
 
 type ArtistWithAlbumsID3 struct {

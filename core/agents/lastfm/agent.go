@@ -261,6 +261,23 @@ func (l *lastfmAgent) GetArtistPopularity(ctx context.Context, id, name, mbid st
 	}, nil
 }
 
+func (l *lastfmAgent) GetTrackPopularity(ctx context.Context, trackName, artistName, mbid string) (*agents.TrackInfo, error) {
+	t, err := l.callTrackGetInfo(ctx, trackName, artistName, mbid)
+	if err != nil {
+		return nil, err
+	}
+
+	listeners, _ := strconv.ParseInt(t.Listeners, 10, 64)
+	playcount, _ := strconv.ParseInt(t.Playcount, 10, 64)
+
+	return &agents.TrackInfo{
+		Name:      t.Name,
+		MBID:      t.MBID,
+		Listeners: listeners,
+		Playcount: playcount,
+	}, nil
+}
+
 func (l *lastfmAgent) callAlbumGetInfo(ctx context.Context, name, artist, mbid string) (*Album, error) {
 	a, err := l.client.albumGetInfo(ctx, name, artist, mbid)
 	var lfErr *lastFMError
@@ -310,6 +327,27 @@ func (l *lastfmAgent) callArtistGetTopTracks(ctx context.Context, artistName str
 		return nil, err
 	}
 	return t.Track, nil
+}
+
+func (l *lastfmAgent) callTrackGetInfo(ctx context.Context, trackName, artistName, mbid string) (*TrackInfo, error) {
+	t, err := l.client.trackGetInfo(ctx, trackName, artistName, mbid)
+	var lfErr *lastFMError
+	isLastFMError := errors.As(err, &lfErr)
+
+	if mbid != "" && (isLastFMError && lfErr.Code == 6) {
+		log.Debug(ctx, "LastFM/track.getInfo could not find track by mbid, trying again", "track", trackName, "mbid", mbid)
+		return l.callTrackGetInfo(ctx, trackName, artistName, "")
+	}
+
+	if err != nil {
+		if isLastFMError && lfErr.Code == 6 {
+			log.Debug(ctx, "Track not found", "track", trackName, "artist", artistName, "mbid", mbid, err)
+		} else {
+			log.Error(ctx, "Error calling LastFM/track.getInfo", "track", trackName, "artist", artistName, "mbid", mbid, err)
+		}
+		return nil, err
+	}
+	return t, nil
 }
 
 func (l *lastfmAgent) getArtistForScrobble(track *model.MediaFile, role model.Role, displayName string) string {

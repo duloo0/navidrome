@@ -154,6 +154,12 @@ const ArtistListView = ({ hasShow, hasEdit, hasList, width, ...rest }) => {
           className={classes.ratingField}
         />
       ),
+      lastfmListeners: (
+        <NumberField source="lastfmListeners" sortByOrder={'DESC'} />
+      ),
+      lastfmPlaycount: (
+        <NumberField source="lastfmPlaycount" sortByOrder={'DESC'} />
+      ),
     }),
     [classes.ratingField],
   )
@@ -161,6 +167,7 @@ const ArtistListView = ({ hasShow, hasEdit, hasList, width, ...rest }) => {
   const columns = useSelectedFields({
     resource: 'artist',
     columns: toggleableFields,
+    defaultOff: ['lastfmListeners', 'lastfmPlaycount'],
   })
 
   return isXsmall ? (

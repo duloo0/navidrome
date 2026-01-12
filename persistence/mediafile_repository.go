@@ -33,6 +33,9 @@ type dbMediaFile struct {
 	RgAlbumPeak *float64 `structs:"-" json:"-"`
 	RgTrackGain *float64 `structs:"-" json:"-"`
 	RgTrackPeak *float64 `structs:"-" json:"-"`
+	// These are necessary to map the correct names (lastfm_*) to the correct fields (LastFM*)
+	LastfmListeners int64 `structs:"-" json:"-"`
+	LastfmPlaycount int64 `structs:"-" json:"-"`
 }
 
 func (m *dbMediaFile) PostScan() error {
@@ -40,6 +43,9 @@ func (m *dbMediaFile) PostScan() error {
 	m.RGTrackPeak = m.RgTrackPeak
 	m.RGAlbumGain = m.RgAlbumGain
 	m.RGAlbumPeak = m.RgAlbumPeak
+	// Map lastfm fields from db column names to model field names
+	m.MediaFile.LastFMListeners = m.LastfmListeners
+	m.MediaFile.LastFMPlaycount = m.LastfmPlaycount
 	var err error
 	m.MediaFile.Participants, err = unmarshalParticipants(m.Participants)
 	if err != nil {
@@ -387,6 +393,15 @@ func (r *mediaFileRepository) Search(q string, offset int, size int, options ...
 		}
 	}
 	return res.toModels(), nil
+}
+
+func (r *mediaFileRepository) UpdatePopularity(id string, listeners, playcount int64) error {
+	upd := Update(r.tableName).
+		Set("lastfm_listeners", listeners).
+		Set("lastfm_playcount", playcount).
+		Where(Eq{"id": id})
+	_, err := r.executeSQL(upd)
+	return err
 }
 
 func (r *mediaFileRepository) Count(options ...rest.QueryOptions) (int64, error) {

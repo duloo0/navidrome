@@ -129,8 +129,10 @@ func toOSArtistID3(ctx context.Context, a model.Artist) *responses.OpenSubsonicA
 		return nil
 	}
 	artist := responses.OpenSubsonicArtistID3{
-		MusicBrainzId: a.MbzArtistID,
-		SortName:      sortName(a.SortArtistName, a.OrderArtistName),
+		MusicBrainzId:   a.MbzArtistID,
+		SortName:        sortName(a.SortArtistName, a.OrderArtistName),
+		LastFMListeners: a.LastFMListeners,
+		LastFMPlaycount: a.LastFMPlaycount,
 	}
 	artist.Roles = slice.Map(a.Roles(), func(r model.Role) string { return r.String() })
 	return &artist
@@ -259,6 +261,8 @@ func osChildFromMediaFile(ctx context.Context, mf model.MediaFile) *responses.Op
 	}
 	child.Contributors = contributors
 	child.ExplicitStatus = mapExplicitStatus(mf.ExplicitStatus)
+	child.LastFMListeners = mf.LastFMListeners
+	child.LastFMPlaycount = mf.LastFMPlaycount
 	return &child
 }
 
@@ -421,6 +425,8 @@ func buildOSAlbumID3(ctx context.Context, album model.Album) *responses.OpenSubs
 	if len(album.Tags.Values(model.TagAlbumVersion)) > 0 {
 		dir.Version = album.Tags.Values(model.TagAlbumVersion)[0]
 	}
+	dir.LastFMListeners = album.LastFMListeners
+	dir.LastFMPlaycount = album.LastFMPlaycount
 
 	return &dir
 }

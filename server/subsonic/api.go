@@ -121,6 +121,7 @@ func (api *Router) routes() http.Handler {
 			h(r, "getNowPlaying", api.GetNowPlaying)
 			h(r, "getRandomSongs", api.GetRandomSongs)
 			h(r, "getSongsByGenre", api.GetSongsByGenre)
+			h(r, "getLibraryRadio", api.GetLibraryRadio)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(getPlayer(api.players))
@@ -161,6 +162,8 @@ func (api *Router) routes() http.Handler {
 			r.Use(getPlayer(api.players))
 			h(r, "getScanStatus", api.GetScanStatus)
 			h(r, "startScan", api.StartScan)
+			h(r, "refreshPopularity", api.RefreshPopularity)
+			h(r, "getPopularityStatus", api.GetPopularityStatus)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(getPlayer(api.players))

@@ -36,6 +36,7 @@ const (
 type Provider interface {
 	UpdateAlbumInfo(ctx context.Context, id string) (*model.Album, error)
 	UpdateArtistInfo(ctx context.Context, id string, count int, includeNotPresent bool) (*model.Artist, error)
+	UpdateTrackPopularity(ctx context.Context, id string) error
 	ArtistRadio(ctx context.Context, id string, count int) (model.MediaFiles, error)
 	TopSongs(ctx context.Context, artist string, count int) (model.MediaFiles, error)
 	ArtistImage(ctx context.Context, id string) (*url.URL, error)
@@ -85,6 +86,7 @@ type Agents interface {
 	agents.ArtistTopSongsRetriever
 	agents.ArtistURLRetriever
 	agents.ArtistPopularityRetriever
+	agents.TrackPopularityRetriever
 }
 
 func NewProvider(ds model.DataStore, agents Agents) Provider {
@@ -190,6 +192,31 @@ func (e *provider) populateAlbumInfo(ctx context.Context, album auxAlbum) (auxAl
 	}
 
 	return album, nil
+}
+
+func (e *provider) UpdateTrackPopularity(ctx context.Context, id string) error {
+	mf, err := e.ds.MediaFile(ctx).Get(id)
+	if err != nil {
+		return err
+	}
+
+	info, err := e.ag.GetTrackPopularity(ctx, mf.Title, mf.Artist, mf.MbzRecordingID)
+	if errors.Is(err, agents.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		log.Error(ctx, "Error getting track popularity", "id", id, "title", mf.Title, "artist", mf.Artist, err)
+		return err
+	}
+
+	err = e.ds.MediaFile(ctx).UpdatePopularity(id, info.Listeners, info.Playcount)
+	if err != nil {
+		log.Error(ctx, "Error updating track popularity", "id", id, "title", mf.Title, err)
+		return err
+	}
+
+	log.Trace(ctx, "Track popularity updated", "id", id, "title", mf.Title, "listeners", info.Listeners, "playcount", info.Playcount)
+	return nil
 }
 
 func (e *provider) getArtist(ctx context.Context, id string) (auxArtist, error) {

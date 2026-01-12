@@ -5,7 +5,7 @@ import { GlobalHotKeys } from 'react-hotkeys'
 import IconButton from '@material-ui/core/IconButton'
 import { useMediaQuery } from '@material-ui/core'
 import { RiSaveLine } from 'react-icons/ri'
-import { LoveButton, useToggleLove } from '../common'
+import { LoveButton, ThumbUpButton, ThumbDownButton, useToggleLove } from '../common'
 import { openSaveQueueDialog } from '../actions'
 import { keyMap } from '../hotkeys'
 import { makeStyles } from '@material-ui/core/styles'
@@ -99,16 +99,40 @@ const PlayerToolbar = ({ id, isRadio }) => {
     />
   )
 
+  const thumbUpButton = (
+    <ThumbUpButton
+      record={data}
+      resource={'song'}
+      size={isDesktop ? 'small' : 'inherit'}
+      disabled={loading || !id || isRadio}
+      className={buttonClass}
+    />
+  )
+
+  const thumbDownButton = (
+    <ThumbDownButton
+      record={data}
+      resource={'song'}
+      size={isDesktop ? 'small' : 'inherit'}
+      disabled={loading || !id || isRadio}
+      className={buttonClass}
+    />
+  )
+
   return (
     <>
       <GlobalHotKeys keyMap={keyMap} handlers={handlers} allowChanges />
       {isDesktop ? (
         <li className={`${listItemClass} item`}>
+          {thumbDownButton}
+          {thumbUpButton}
           {saveQueueButton}
           {loveButton}
         </li>
       ) : (
         <>
+          <li className={`${listItemClass} item`}>{thumbDownButton}</li>
+          <li className={`${listItemClass} item`}>{thumbUpButton}</li>
           <li className={`${listItemClass} item`}>{saveQueueButton}</li>
           <li className={`${listItemClass} item`}>{loveButton}</li>
         </>

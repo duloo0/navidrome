@@ -107,6 +107,21 @@ const getTopSongs = (artist, count = 50) => {
   return httpClient(url('getTopSongs', null, { artist, count }))
 }
 
+const getLibraryRadio = (options = {}) => {
+  return httpClient(
+    url('getLibraryRadio', null, {
+      count: options.count || 100,
+      ...(options.genre && { genre: options.genre }),
+      ...(options.fromYear && { fromYear: options.fromYear }),
+      ...(options.toYear && { toYear: options.toYear }),
+    }),
+  )
+}
+
+const refreshPopularity = () => httpClient(url('refreshPopularity'))
+
+const getPopularityStatus = () => httpClient(url('getPopularityStatus'))
+
 const streamUrl = (id, options) => {
   return baseUrl(
     url('stream', id, {
@@ -135,4 +150,7 @@ export default {
   getArtistInfo,
   getTopSongs,
   getSimilarSongs2,
+  getLibraryRadio,
+  refreshPopularity,
+  getPopularityStatus,
 }

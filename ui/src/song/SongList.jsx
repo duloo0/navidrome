@@ -24,6 +24,8 @@ import {
   SongTitleField,
   SongSimpleList,
   RatingField,
+  ThumbUpButton,
+  ThumbDownButton,
   useResourceRefresh,
   ArtistLinkField,
   PathField,
@@ -171,6 +173,18 @@ const SongList = (props) => {
           className={classes.ratingField}
         />
       ),
+      thumbs: (
+        <>
+          <ThumbUpButton resource="song" className={classes.ratingField} />
+          <ThumbDownButton resource="song" className={classes.ratingField} />
+        </>
+      ),
+      lastfmListeners: isDesktop && (
+        <NumberField source="lastfmListeners" sortByOrder={'DESC'} />
+      ),
+      lastfmPlaycount: isDesktop && (
+        <NumberField source="lastfmPlaycount" sortByOrder={'DESC'} />
+      ),
       bpm: isDesktop && <NumberField source="bpm" />,
       genre: <TextField source="genre" />,
       mood: isDesktop && (
@@ -201,6 +215,9 @@ const SongList = (props) => {
       'comment',
       'path',
       'createdAt',
+      'thumbs',
+      'lastfmListeners',
+      'lastfmPlaycount',
     ],
   })
 

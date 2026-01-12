@@ -85,6 +85,10 @@ type MediaFile struct {
 	RGTrackGain          *float64 `structs:"rg_track_gain" json:"rgTrackGain"`
 	RGTrackPeak          *float64 `structs:"rg_track_peak" json:"rgTrackPeak"`
 
+	// Last.fm popularity data
+	LastFMListeners int64 `structs:"lastfm_listeners" json:"lastfmListeners" hash:"ignore"`
+	LastFMPlaycount int64 `structs:"lastfm_playcount" json:"lastfmPlaycount" hash:"ignore"`
+
 	Tags         Tags         `structs:"tags" json:"tags,omitempty" hash:"ignore"`       // All imported tags from the original file
 	Participants Participants `structs:"participants" json:"participants" hash:"ignore"` // All artists that participated in this track
 
@@ -370,6 +374,9 @@ type MediaFileRepository interface {
 	GetMissingAndMatching(libId int) (MediaFileCursor, error)
 	FindRecentFilesByMBZTrackID(missing MediaFile, since time.Time) (MediaFiles, error)
 	FindRecentFilesByProperties(missing MediaFile, since time.Time) (MediaFiles, error)
+
+	// UpdatePopularity updates the Last.fm popularity data for a media file
+	UpdatePopularity(id string, listeners, playcount int64) error
 
 	AnnotatedRepository
 	BookmarkableRepository
