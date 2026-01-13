@@ -338,6 +338,36 @@
         "scanInProgress": "Scan in progress...",
         "noLibrariesAssigned": "No libraries assigned to this user"
       }
+    },
+    "libraryRadio": {
+      "name": "Library Radio",
+      "lists": {
+        "all": "Smart Mix",
+        "random": "Random",
+        "favorites": "Favourites Radio",
+        "topRated": "Top Rated",
+        "recentlyAdded": "Recently Added",
+        "mostPlayed": "Most Played",
+        "byGenre": "By Genre"
+      },
+      "filters": {
+        "genre": "Genre",
+        "allGenres": "All Genres",
+        "year": "Year",
+        "allYears": "All Years",
+        "trackCount": "Tracks"
+      },
+      "actions": {
+        "play": "Play",
+        "shuffle": "Shuffle",
+        "refresh": "New Mix"
+      },
+      "notifications": {
+        "started": "Playing %{smart_count} tracks",
+        "noTracks": "No tracks found matching criteria",
+        "error": "Failed to start radio"
+      },
+      "help": "Click Play to start a smart radio mix based on your library and listening history."
     }
   },
   "ra": {
@@ -533,6 +563,8 @@
       "selectLibraries": "Select Libraries",
       "none": "None"
     },
+    "libraryRadio": "Library Radio",
+    "libraryRadioDecades": "By Decade",
     "settings": "Settings",
     "version": "Version",
     "theme": "Theme",

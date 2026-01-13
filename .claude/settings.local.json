@@ -7,6 +7,9 @@
       "Bash(dir:*)",
       "Bash(grep:*)",
       "Bash(find:*)"
+    ],
+    "additionalDirectories": [
+      "G:\\Code\\naviplayer\\naviplayer"
     ]
   }
 }

@@ -9,6 +9,7 @@ import SubMenu from './SubMenu'
 import { humanize, pluralize } from 'inflection'
 import albumLists from '../album/albumLists'
 import PlaylistsSubMenu from './PlaylistsSubMenu'
+import LibraryRadioSubMenu from './LibraryRadioSubMenu'
 import LibrarySelector from '../common/LibrarySelector'
 import config from '../config'
 
@@ -56,6 +57,8 @@ const Menu = ({ dense = false }) => {
   // TODO State is not persisted in mobile when you close the sidebar menu. Move to redux?
   const [state, setState] = useState({
     menuAlbumList: true,
+    menuLibraryRadio: true,
+    menuLibraryRadioDecades: false,
     menuPlaylists: true,
     menuSharedPlaylists: true,
   })
@@ -125,6 +128,12 @@ const Menu = ({ dense = false }) => {
           renderAlbumMenuItemLink(type, albumLists[type]),
         )}
       </SubMenu>
+      <LibraryRadioSubMenu
+        state={state}
+        setState={setState}
+        sidebarIsOpen={open}
+        dense={dense}
+      />
       {resources.filter(subItems(undefined)).map(renderResourceMenuItemLink)}
       {config.devSidebarPlaylists && open ? (
         <>

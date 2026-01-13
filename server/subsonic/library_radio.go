@@ -237,29 +237,92 @@ func (api *Router) runPopularityScan(ctx context.Context) {
 	start := time.Now()
 	log.Info(ctx, "Starting popularity scan")
 
-	// Get all artists
-	artists, err := api.ds.Artist(ctx).GetAll(model.QueryOptions{})
+	// Get artists without popularity data first, then those with data
+	artistsWithoutData, err := api.ds.Artist(ctx).GetAll(model.QueryOptions{
+		Filters: Or{
+			Eq{"lastfm_listeners": nil},
+			Eq{"lastfm_playcount": nil},
+		},
+	})
 	if err != nil {
-		log.Error(ctx, "Failed to get artists for popularity scan", err)
+		log.Error(ctx, "Failed to get artists without popularity data", err)
 		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
 		return
 	}
 
-	// Get all albums
-	albums, err := api.ds.Album(ctx).GetAll(model.QueryOptions{})
+	artistsWithData, err := api.ds.Artist(ctx).GetAll(model.QueryOptions{
+		Filters: And{
+			NotEq{"lastfm_listeners": nil},
+			NotEq{"lastfm_playcount": nil},
+		},
+	})
 	if err != nil {
-		log.Error(ctx, "Failed to get albums for popularity scan", err)
+		log.Error(ctx, "Failed to get artists with popularity data", err)
 		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
 		return
 	}
 
-	// Get all tracks
-	tracks, err := api.ds.MediaFile(ctx).GetAll(model.QueryOptions{})
+	// Combine lists: items without data first, then items with data
+	artists := append(artistsWithoutData, artistsWithData...)
+
+	// Get albums without popularity data first, then those with data
+	albumsWithoutData, err := api.ds.Album(ctx).GetAll(model.QueryOptions{
+		Filters: Or{
+			Eq{"lastfm_listeners": nil},
+			Eq{"lastfm_playcount": nil},
+		},
+	})
 	if err != nil {
-		log.Error(ctx, "Failed to get tracks for popularity scan", err)
+		log.Error(ctx, "Failed to get albums without popularity data", err)
 		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
 		return
 	}
+
+	albumsWithData, err := api.ds.Album(ctx).GetAll(model.QueryOptions{
+		Filters: And{
+			NotEq{"lastfm_listeners": nil},
+			NotEq{"lastfm_playcount": nil},
+		},
+	})
+	if err != nil {
+		log.Error(ctx, "Failed to get albums with popularity data", err)
+		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
+		return
+	}
+
+	albums := append(albumsWithoutData, albumsWithData...)
+
+	// Get tracks without popularity data first, then those with data
+	tracksWithoutData, err := api.ds.MediaFile(ctx).GetAll(model.QueryOptions{
+		Filters: Or{
+			Eq{"lastfm_listeners": nil},
+			Eq{"lastfm_playcount": nil},
+		},
+	})
+	if err != nil {
+		log.Error(ctx, "Failed to get tracks without popularity data", err)
+		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
+		return
+	}
+
+	tracksWithData, err := api.ds.MediaFile(ctx).GetAll(model.QueryOptions{
+		Filters: And{
+			NotEq{"lastfm_listeners": nil},
+			NotEq{"lastfm_playcount": nil},
+		},
+	})
+	if err != nil {
+		log.Error(ctx, "Failed to get tracks with popularity data", err)
+		popularityScanStatus.Store(&PopularityScanStatus{Error: err.Error()})
+		return
+	}
+
+	tracks := append(tracksWithoutData, tracksWithData...)
+
+	log.Info(ctx, "Popularity scan prioritization",
+		"artistsWithoutData", len(artistsWithoutData), "artistsWithData", len(artistsWithData),
+		"albumsWithoutData", len(albumsWithoutData), "albumsWithData", len(albumsWithData),
+		"tracksWithoutData", len(tracksWithoutData), "tracksWithData", len(tracksWithData))
 
 	status := &PopularityScanStatus{
 		Running:      true,
