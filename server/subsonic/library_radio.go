@@ -19,14 +19,17 @@ import (
 )
 
 const (
-	libraryRadioBaseWeight     = 10
-	libraryRadioLastFMFactor   = 5.0
-	libraryRadioUserFactor     = 2.0
-	libraryRadioMaxUserPlays   = 50
-	libraryRadioPoolSize       = 2000 // Max songs to consider for weighting
-	libraryRadioRatingFactor   = 15.0 // Weight boost per rating star (4+ stars)
-	libraryRadioRecencyDays    = 3    // Days to consider "recently played"
-	libraryRadioRecencyPenalty = 0.3  // Multiplier for recently played songs
+	libraryRadioBaseWeight       = 10
+	libraryRadioLastFMFactor     = 5.0
+	libraryRadioUserFactor       = 2.0
+	libraryRadioMaxUserPlays     = 50
+	libraryRadioPoolSize         = 2000 // Max songs to consider for weighting
+	libraryRadioRatingFactor     = 15.0 // Weight boost per rating star (4+ stars)
+	libraryRadioRecencyDays      = 3    // Days to consider "recently played"
+	libraryRadioRecencyPenalty   = 0.3  // Multiplier for recently played songs
+	libraryRadioArtistFactor     = 20.0 // Weight boost for artists with high 5-star to 1-star ratio
+	libraryRadioArtistMinSongs   = 3    // Minimum rated songs for artist weighting to apply
+	libraryRadioArtistPenalty    = 0.5  // Penalty multiplier for artists with negative score
 )
 
 func (api *Router) GetLibraryRadio(r *http.Request) (*responses.Subsonic, error) {
@@ -70,17 +73,26 @@ func (api *Router) getLibraryRadioSongs(ctx context.Context, count int, genre st
 		return nil, nil
 	}
 
-	// Collect unique album IDs
+	// Collect unique album IDs and artist IDs
 	albumIDSet := make(map[string]struct{})
+	artistIDSet := make(map[string]struct{})
 	for _, song := range songs {
 		if song.AlbumID != "" {
 			albumIDSet[song.AlbumID] = struct{}{}
+		}
+		if song.ArtistID != "" {
+			artistIDSet[song.ArtistID] = struct{}{}
 		}
 	}
 
 	albumIDs := make([]string, 0, len(albumIDSet))
 	for id := range albumIDSet {
 		albumIDs = append(albumIDs, id)
+	}
+
+	artistIDs := make([]string, 0, len(artistIDSet))
+	for id := range artistIDSet {
+		artistIDs = append(artistIDs, id)
 	}
 
 	// Get album popularity data
@@ -102,10 +114,22 @@ func (api *Router) getLibraryRadioSongs(ctx context.Context, count int, genre st
 		}
 	}
 
+	// Get artist rating statistics (5-star and 1-star song counts)
+	artistRatings := make(map[string]artistRatingStats)
+	if len(artistIDs) > 0 {
+		stats, err := api.getArtistRatingStats(ctx, artistIDs)
+		if err != nil {
+			log.Warn(ctx, "Failed to get artist rating stats", err)
+			// Continue without artist rating data
+		} else {
+			artistRatings = stats
+		}
+	}
+
 	// Build weighted chooser
 	weightedSongs := random.NewWeightedChooser[model.MediaFile]()
 	for _, song := range songs {
-		weight := calculateLibraryRadioWeight(song, albumPopularity[song.AlbumID])
+		weight := calculateLibraryRadioWeight(song, albumPopularity[song.AlbumID], artistRatings[song.ArtistID])
 		weightedSongs.Add(song, weight)
 	}
 
@@ -127,7 +151,57 @@ type albumPopularityData struct {
 	playcount int64
 }
 
-func calculateLibraryRadioWeight(song model.MediaFile, albumPop albumPopularityData) int {
+type artistRatingStats struct {
+	fiveStarCount int
+	oneStarCount  int
+}
+
+// score calculates the artist's rating score based on 5-star and 1-star song counts
+func (a artistRatingStats) score() int {
+	return a.fiveStarCount - a.oneStarCount
+}
+
+// totalRated returns the total number of rated songs (5-star + 1-star)
+func (a artistRatingStats) totalRated() int {
+	return a.fiveStarCount + a.oneStarCount
+}
+
+// getArtistRatingStats queries the database to get 5-star and 1-star song counts per artist
+func (api *Router) getArtistRatingStats(ctx context.Context, artistIDs []string) (map[string]artistRatingStats, error) {
+	if len(artistIDs) == 0 {
+		return make(map[string]artistRatingStats), nil
+	}
+
+	result := make(map[string]artistRatingStats)
+
+	// Initialize all artists with zero counts
+	for _, artistID := range artistIDs {
+		result[artistID] = artistRatingStats{}
+	}
+
+	// Get all songs for these artists (with their ratings from annotation join)
+	songs, err := api.ds.MediaFile(ctx).GetAll(model.QueryOptions{
+		Filters: Eq{"media_file.artist_id": artistIDs},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Aggregate rating counts by artist
+	for _, song := range songs {
+		stats := result[song.ArtistID]
+		if song.Rating == 5 {
+			stats.fiveStarCount++
+		} else if song.Rating == 1 {
+			stats.oneStarCount++
+		}
+		result[song.ArtistID] = stats
+	}
+
+	return result, nil
+}
+
+func calculateLibraryRadioWeight(song model.MediaFile, albumPop albumPopularityData, artistStats artistRatingStats) int {
 	// Exclude 1-star (thumbs down) songs entirely
 	if song.Rating == 1 {
 		return 0
@@ -162,6 +236,19 @@ func calculateLibraryRadioWeight(song model.MediaFile, albumPop albumPopularityD
 	// Rating boost (5-star songs get significant boost)
 	if song.Rating >= 4 {
 		weight += float64(song.Rating) * libraryRadioRatingFactor
+	}
+
+	// Artist rating boost/penalty based on 5-star vs 1-star song ratio
+	// Only applies if the artist has enough rated songs to be meaningful
+	if artistStats.totalRated() >= libraryRadioArtistMinSongs {
+		artistScore := artistStats.score()
+		if artistScore > 0 {
+			// Positive score: boost weight based on the difference (logarithmic scaling)
+			weight += math.Log10(float64(artistScore)+1) * libraryRadioArtistFactor
+		} else if artistScore < 0 {
+			// Negative score: apply penalty multiplier
+			weight *= libraryRadioArtistPenalty
+		}
 	}
 
 	// Recency penalty - reduce weight for recently played songs

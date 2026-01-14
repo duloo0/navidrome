@@ -36,6 +36,11 @@ type Artist struct {
 	LastFMListeners int64 `structs:"lastfm_listeners" json:"lastfmListeners,omitempty"`
 	LastFMPlaycount int64 `structs:"lastfm_playcount" json:"lastfmPlaycount,omitempty"`
 
+	// Per-user rating stats (calculated from song ratings for library radio weighting)
+	FiveStarCount int     `structs:"-" json:"fiveStarCount,omitempty"`
+	OneStarCount  int     `structs:"-" json:"oneStarCount,omitempty"`
+	RatingScore   float64 `structs:"-" json:"ratingScore,omitempty"`
+
 	Missing bool `structs:"missing" json:"missing"`
 
 	CreatedAt *time.Time `structs:"created_at" json:"createdAt,omitempty"`

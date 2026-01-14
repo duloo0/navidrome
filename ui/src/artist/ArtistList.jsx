@@ -154,6 +154,23 @@ const ArtistListView = ({ hasShow, hasEdit, hasList, width, ...rest }) => {
           className={classes.ratingField}
         />
       ),
+      ratingScore: (
+        <FunctionField
+          source="ratingScore"
+          sortByOrder={'DESC'}
+          render={(record) => {
+            if (!record) return null
+            const score = record.ratingScore || 0
+            const fiveStars = record.fiveStarCount || 0
+            const oneStars = record.oneStarCount || 0
+            return (
+              <span title={`★5: ${fiveStars} | ★1: ${oneStars}`}>
+                {score.toFixed(1)}
+              </span>
+            )
+          }}
+        />
+      ),
       lastfmListeners: (
         <NumberField source="lastfmListeners" sortByOrder={'DESC'} />
       ),
@@ -167,7 +184,7 @@ const ArtistListView = ({ hasShow, hasEdit, hasList, width, ...rest }) => {
   const columns = useSelectedFields({
     resource: 'artist',
     columns: toggleableFields,
-    defaultOff: ['lastfmListeners', 'lastfmPlaycount'],
+    defaultOff: ['ratingScore', 'lastfmListeners', 'lastfmPlaycount'],
   })
 
   return isXsmall ? (

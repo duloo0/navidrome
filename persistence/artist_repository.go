@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -34,6 +35,9 @@ type dbArtist struct {
 	// without using `db` struct tags in the model.Artist struct
 	LastfmListeners int64 `structs:"-" json:"-"`
 	LastfmPlaycount int64 `structs:"-" json:"-"`
+	// Per-user rating stats (computed from song ratings)
+	FiveStarCount int `structs:"-" json:"-"`
+	OneStarCount  int `structs:"-" json:"-"`
 }
 
 type dbSimilarArtist struct {
@@ -41,10 +45,21 @@ type dbSimilarArtist struct {
 	Name string `json:"name,omitempty"`
 }
 
+// Constants for artist rating score calculation (must match library_radio.go)
+const (
+	artistRatingFactor  = 20.0 // Weight multiplier for positive scores
+	artistRatingPenalty = 0.5  // Penalty multiplier for negative scores
+)
+
 func (a *dbArtist) PostScan() error {
 	// Map lastfm fields from db column names to model field names
 	a.Artist.LastFMListeners = a.LastfmListeners
 	a.Artist.LastFMPlaycount = a.LastfmPlaycount
+
+	// Map rating stats and calculate weighted score
+	a.Artist.FiveStarCount = a.FiveStarCount
+	a.Artist.OneStarCount = a.OneStarCount
+	a.Artist.RatingScore = calculateArtistRatingScore(a.FiveStarCount, a.OneStarCount)
 
 	a.Artist.Stats = make(map[model.Role]model.ArtistStats)
 
@@ -100,6 +115,19 @@ func (a *dbArtist) PostScan() error {
 		})
 	}
 	return nil
+}
+
+// calculateArtistRatingScore computes the weighted rating score using the same formula as library radio.
+// Positive scores: log10(score+1) * factor
+// Negative scores: -log10(abs(score)+1) * factor * penalty
+func calculateArtistRatingScore(fiveStarCount, oneStarCount int) float64 {
+	score := fiveStarCount - oneStarCount
+	if score > 0 {
+		return math.Log10(float64(score)+1) * artistRatingFactor
+	} else if score < 0 {
+		return -math.Log10(float64(-score)+1) * artistRatingFactor * artistRatingPenalty
+	}
+	return 0
 }
 
 func (a *dbArtist) PostMapArgs(m map[string]any) error {
@@ -158,6 +186,12 @@ func NewArtistRepository(ctx context.Context, db dbx.Builder) model.ArtistReposi
 		"maincredit_song_count":  "sum(stats->>'maincredit'->>'m')",
 		"maincredit_album_count": "sum(stats->>'maincredit'->>'a')",
 		"maincredit_size":        "sum(stats->>'maincredit'->>'s')",
+
+		// Artist rating stats (based on 5-star vs 1-star song ratings)
+		// Note: sanitizeSort converts to snake_case, so we need snake_case keys here
+		"rating_score":    "(five_star_count - one_star_count)",
+		"five_star_count": "five_star_count",
+		"one_star_count":  "one_star_count",
 	})
 	return r
 }
@@ -200,7 +234,49 @@ func (r *artistRepository) selectArtist(options ...model.QueryOptions) SelectBui
 
 	query = r.applyLibraryFilterToArtistQuery(query)
 	query = query.GroupBy("artist.id")
-	return r.withAnnotation(query, "artist.id")
+	query = r.withAnnotation(query, "artist.id")
+	query = r.withArtistRatingStats(query)
+	return query
+}
+
+// withArtistRatingStats adds computed columns for 5-star and 1-star song counts per artist.
+// These are used for artist ranking in the UI (same calculation as library radio weighting).
+func (r *artistRepository) withArtistRatingStats(query SelectBuilder) SelectBuilder {
+	user := loggedUser(r.ctx)
+	if user.ID == invalidUserId {
+		// No user logged in, return zeros
+		return query.Columns(
+			"0 as five_star_count",
+			"0 as one_star_count",
+		)
+	}
+
+	// Subquery to count 5-star rated songs for each artist
+	fiveStarSubquery := fmt.Sprintf(`COALESCE((
+		SELECT COUNT(*)
+		FROM media_file mf
+		JOIN annotation ann ON ann.item_id = mf.id
+			AND ann.item_type = 'media_file'
+			AND ann.user_id = '%s'
+			AND ann.rating = 5
+		WHERE mf.artist_id = artist.id
+	), 0) as five_star_count`, user.ID)
+
+	// Subquery to count 1-star rated songs for each artist
+	oneStarSubquery := fmt.Sprintf(`COALESCE((
+		SELECT COUNT(*)
+		FROM media_file mf
+		JOIN annotation ann ON ann.item_id = mf.id
+			AND ann.item_type = 'media_file'
+			AND ann.user_id = '%s'
+			AND ann.rating = 1
+		WHERE mf.artist_id = artist.id
+	), 0) as one_star_count`, user.ID)
+
+	return query.Columns(
+		fiveStarSubquery,
+		oneStarSubquery,
+	)
 }
 
 func (r *artistRepository) CountAll(options ...model.QueryOptions) (int64, error) {
