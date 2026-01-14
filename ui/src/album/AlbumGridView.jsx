@@ -12,12 +12,29 @@ import AlbumCard from './AlbumCard'
 const useStyles = makeStyles(
   (theme) => ({
     root: {
-      margin: '20px',
-      display: 'grid',
+      padding: theme.spacing(3),
+      paddingTop: theme.spacing(2),
+      maxWidth: '1800px',
+      margin: '0 auto',
+      [theme.breakpoints.down('sm')]: {
+        padding: theme.spacing(2),
+        paddingTop: theme.spacing(1),
+      },
+    },
+    gridList: {
+      // Override GridList default styles for better spacing
+      margin: '-8px !important', // Compensate for tile margins
+      [theme.breakpoints.up('lg')]: {
+        margin: '-12px !important',
+      },
     },
     gridListTile: {
       // Remove default tile styling to let AlbumCard handle everything
       overflow: 'visible',
+      padding: '8px !important',
+      [theme.breakpoints.up('lg')]: {
+        padding: '12px !important',
+      },
     },
   }),
   { name: 'NDAlbumGridView' },
@@ -27,8 +44,8 @@ const getColsForWidth = (width) => {
   if (width === 'xs') return 2
   if (width === 'sm') return 3
   if (width === 'md') return 4
-  if (width === 'lg') return 6
-  return 9
+  if (width === 'lg') return 5
+  return 7 // xl - fewer columns for larger cards
 }
 
 const LoadedAlbumGrid = ({ ids, data, basePath, width }) => {
@@ -39,10 +56,11 @@ const LoadedAlbumGrid = ({ ids, data, basePath, width }) => {
   return (
     <div className={classes.root}>
       <GridList
+        className={classes.gridList}
         component="div"
         cellHeight="auto"
         cols={getColsForWidth(width)}
-        spacing={16}
+        spacing={0}
       >
         {ids.map((id) => (
           <GridListTile className={classes.gridListTile} key={id}>

@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Card,
-  CardContent,
-  CardMedia,
   Collapse,
   makeStyles,
   Typography,
@@ -36,78 +33,223 @@ import AlbumExternalLinks from './AlbumExternalLinks'
 
 const useStyles = makeStyles(
   (theme) => ({
-    root: {
-      [theme.breakpoints.down('xs')]: {
-        padding: '0.7em',
-        minWidth: '20em',
-      },
-      [theme.breakpoints.up('sm')]: {
-        padding: '1em',
-        minWidth: '32em',
-      },
-    },
-    cardContents: {
-      display: 'flex',
-    },
-    details: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    content: {
-      flex: '2 0 auto',
-    },
-    coverParent: {
-      [theme.breakpoints.down('xs')]: {
-        height: '8em',
-        width: '8em',
-        minWidth: '8em',
-      },
-      [theme.breakpoints.up('sm')]: {
-        height: '10em',
-        width: '10em',
-        minWidth: '10em',
-      },
-      [theme.breakpoints.up('lg')]: {
-        height: '15em',
-        width: '15em',
-        minWidth: '15em',
-      },
-      backgroundColor: 'transparent',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    cover: {
-      objectFit: 'contain',
-      cursor: 'pointer',
-      display: 'block',
+    // Hero container with blurred background
+    heroContainer: {
+      position: 'relative',
       width: '100%',
-      height: '100%',
-      backgroundColor: 'transparent',
-      transition: 'opacity 0.3s ease-in-out',
+      minHeight: '380px',
+      display: 'flex',
+      alignItems: 'flex-end',
+      padding: theme.spacing(4),
+      paddingTop: theme.spacing(10),
+      overflow: 'hidden',
+      borderRadius: 0,
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        minHeight: '450px',
+        padding: theme.spacing(3),
+        paddingTop: theme.spacing(6),
+      },
+    },
+    // Blurred background image
+    backgroundBlur: {
+      position: 'absolute',
+      top: '-30%',
+      left: '-15%',
+      right: '-15%',
+      bottom: '-30%',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      filter: 'blur(80px)',
+      opacity: 0.35,
+      transform: 'scale(1.3)',
+      zIndex: 0,
+    },
+    // Gradient overlay for readability
+    gradientOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: `linear-gradient(
+        180deg,
+        transparent 0%,
+        ${theme.palette.background.default}70 40%,
+        ${theme.palette.background.default} 100%
+      )`,
+      zIndex: 1,
+    },
+    // Content wrapper
+    content: {
+      position: 'relative',
+      zIndex: 2,
+      display: 'flex',
+      alignItems: 'flex-end',
+      gap: theme.spacing(5),
+      width: '100%',
+      maxWidth: '1400px',
+      margin: '0 auto',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: theme.spacing(3),
+      },
+    },
+    // Cover image container
+    coverContainer: {
+      flexShrink: 0,
+    },
+    // Album cover with enhanced shadow
+    cover: {
+      width: '280px',
+      height: '280px',
+      borderRadius: '12px',
+      objectFit: 'cover',
+      cursor: 'pointer',
+      boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)',
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease',
+      '&:hover': {
+        transform: 'scale(1.02)',
+        boxShadow: '0 28px 72px rgba(0, 0, 0, 0.6)',
+      },
+      [theme.breakpoints.down('lg')]: {
+        width: '240px',
+        height: '240px',
+      },
+      [theme.breakpoints.down('sm')]: {
+        width: '200px',
+        height: '200px',
+      },
     },
     coverLoading: {
       opacity: 0.5,
     },
+    // Info section
+    infoSection: {
+      flex: 1,
+      minWidth: 0,
+      paddingBottom: theme.spacing(1),
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+        paddingBottom: 0,
+      },
+    },
+    // Type label
+    typeLabel: {
+      fontSize: '11px',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '1.5px',
+      color: theme.palette.text.secondary,
+      marginBottom: theme.spacing(1),
+    },
+    // Album name
+    recordName: {
+      fontSize: 'clamp(1.75rem, 4vw, 3rem)',
+      fontWeight: 700,
+      lineHeight: 1.15,
+      letterSpacing: '-0.02em',
+      color: theme.palette.text.primary,
+      marginBottom: theme.spacing(0.5),
+      wordBreak: 'break-word',
+      display: 'flex',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: theme.spacing(1),
+      [theme.breakpoints.down('sm')]: {
+        justifyContent: 'center',
+        fontSize: 'clamp(1.5rem, 5vw, 2rem)',
+      },
+    },
     loveButton: {
-      top: theme.spacing(-0.2),
-      left: theme.spacing(0.5),
+      marginLeft: theme.spacing(0.5),
+    },
+    // Album version
+    albumVersion: {
+      fontSize: '14px',
+      color: theme.palette.text.secondary,
+      marginBottom: theme.spacing(1),
+      fontStyle: 'italic',
+    },
+    // Artist name
+    recordArtist: {
+      fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+      fontWeight: 500,
+      color: theme.palette.text.primary,
+      marginBottom: theme.spacing(1.5),
+      '& a': {
+        color: 'inherit',
+        textDecoration: 'none',
+        transition: 'color 0.15s ease',
+        '&:hover': {
+          color: theme.palette.primary.main,
+        },
+      },
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '1.1rem',
+      },
+    },
+    // Meta info (date, songs, duration)
+    recordMeta: {
+      fontSize: '14px',
+      color: theme.palette.text.secondary,
+      marginBottom: theme.spacing(1.5),
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: theme.spacing(0.5),
+      [theme.breakpoints.down('sm')]: {
+        justifyContent: 'center',
+      },
+    },
+    // Rating section
+    ratingSection: {
+      marginBottom: theme.spacing(1.5),
+      [theme.breakpoints.down('sm')]: {
+        display: 'flex',
+        justifyContent: 'center',
+      },
+    },
+    // Genre list
+    genreList: {
+      marginTop: theme.spacing(1),
+      marginBottom: theme.spacing(1),
+      '& .MuiChip-root': {
+        margin: theme.spacing(0.25),
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        '&:hover': {
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        },
+      },
+      [theme.breakpoints.down('sm')]: {
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+      },
+    },
+    // External links
+    externalLinks: {
+      marginTop: theme.spacing(1.5),
+    },
+    // Notes/description section
+    notesSection: {
+      marginTop: theme.spacing(2),
+      padding: theme.spacing(2),
+      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+      borderRadius: '8px',
+      [theme.breakpoints.down('sm')]: {
+        marginTop: theme.spacing(3),
+        width: '100%',
+      },
     },
     notes: {
       display: 'inline-block',
-      marginTop: '1em',
-      float: 'left',
       wordBreak: 'break-word',
       cursor: 'pointer',
-    },
-    recordName: {},
-    recordArtist: {},
-    recordMeta: {},
-    genreList: {
-      marginTop: theme.spacing(0.5),
-    },
-    externalLinks: {
-      marginTop: theme.spacing(1.5),
+      color: theme.palette.text.secondary,
+      lineHeight: 1.6,
     },
   }),
   {
@@ -253,7 +395,7 @@ const AlbumDetails = (props) => {
     setImageError(false)
   }, [record.id])
 
-  const imageUrl = subsonic.getCoverArtUrl(record, 300)
+  const imageUrl = subsonic.getCoverArtUrl(record, 500)
   const fullImageUrl = subsonic.getCoverArtUrl(record)
 
   const handleImageLoad = useCallback(() => {
@@ -275,31 +417,40 @@ const AlbumDetails = (props) => {
   const handleCloseLightbox = useCallback(() => setLightboxOpen(false), [])
 
   return (
-    <Card className={classes.root}>
-      <div className={classes.cardContents}>
-        <div className={classes.coverParent}>
-          <CardMedia
-            key={record.id}
-            component={'img'}
-            src={imageUrl}
-            width="400"
-            height="400"
-            className={`${classes.cover} ${imageLoading ? classes.coverLoading : ''}`}
-            onClick={handleOpenLightbox}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            title={record.name}
-            style={{
-              cursor: imageError ? 'default' : 'pointer',
-            }}
-          />
-        </div>
-        <div className={classes.details}>
-          <CardContent className={classes.content}>
-            <Typography
-              variant={isDesktop ? 'h5' : 'h6'}
-              className={classes.recordName}
-            >
+    <>
+      {/* Hero section with blurred background */}
+      <div className={classes.heroContainer}>
+        {/* Blurred background */}
+        <div
+          className={classes.backgroundBlur}
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+        {/* Gradient overlay */}
+        <div className={classes.gradientOverlay} />
+
+        {/* Content */}
+        <div className={classes.content}>
+          {/* Album cover */}
+          <div className={classes.coverContainer}>
+            <img
+              key={record.id}
+              src={imageUrl}
+              alt={record.name}
+              className={`${classes.cover} ${imageLoading ? classes.coverLoading : ''}`}
+              onClick={handleOpenLightbox}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              style={{ cursor: imageError ? 'default' : 'pointer' }}
+            />
+          </div>
+
+          {/* Info section */}
+          <div className={classes.infoSection}>
+            {/* Type label */}
+            <Typography className={classes.typeLabel}>Album</Typography>
+
+            {/* Album name with love button */}
+            <Typography className={classes.recordName}>
               {record.name}
               <LoveButton
                 className={classes.loveButton}
@@ -310,17 +461,27 @@ const AlbumDetails = (props) => {
                 color="primary"
               />
             </Typography>
-            <Typography component={'h6'} className={classes.recordArtist}>
-              {record?.tags?.['albumversion']}
-            </Typography>
-            <Typography component={'h6'} className={classes.recordArtist}>
+
+            {/* Album version if present */}
+            {record?.tags?.['albumversion'] && (
+              <Typography className={classes.albumVersion}>
+                {record.tags['albumversion']}
+              </Typography>
+            )}
+
+            {/* Artist name */}
+            <Typography className={classes.recordArtist}>
               <ArtistLinkField record={record} />
             </Typography>
+
+            {/* Meta info */}
             <Typography component={'div'} className={classes.recordMeta}>
               <Details />
             </Typography>
+
+            {/* Rating */}
             {config.enableStarRating && (
-              <div>
+              <div className={classes.ratingSection}>
                 <RatingField
                   record={record}
                   resource={'album'}
@@ -328,47 +489,37 @@ const AlbumDetails = (props) => {
                 />
               </div>
             )}
+
+            {/* Genres */}
             {isDesktop ? (
               <GenreList />
             ) : (
-              <Typography component={'p'}>{record.genre}</Typography>
-            )}
-            {!isXsmall && (
-              <Typography component={'div'} className={classes.recordMeta}>
-                {config.enableExternalServices && (
-                  <AlbumExternalLinks className={classes.externalLinks} />
-                )}
-              </Typography>
-            )}
-            {isDesktop && (
-              <Collapse
-                collapsedHeight={'2.75em'}
-                in={expanded}
-                timeout={'auto'}
-                className={classes.notes}
-              >
-                <Typography
-                  variant={'body1'}
-                  onClick={() => setExpanded(!expanded)}
-                >
-                  <span dangerouslySetInnerHTML={{ __html: notes }} />
+              record.genre && (
+                <Typography component={'p'} className={classes.recordMeta}>
+                  {record.genre}
                 </Typography>
-              </Collapse>
+              )
             )}
-            {isDesktop && record['comment'] && (
-              <CollapsibleComment record={record} />
+
+            {/* External links */}
+            {!isXsmall && config.enableExternalServices && (
+              <AlbumExternalLinks className={classes.externalLinks} />
             )}
-          </CardContent>
+          </div>
         </div>
       </div>
-      {!isDesktop && record['comment'] && (
-        <CollapsibleComment record={record} />
-      )}
-      {!isDesktop && (
-        <div className={classes.notes}>
-          <Collapse collapsedHeight={'1.5em'} in={expanded} timeout={'auto'}>
+
+      {/* Notes section - outside hero */}
+      {notes && (
+        <div className={classes.notesSection}>
+          <Collapse
+            collapsedHeight={isDesktop ? '3em' : '2em'}
+            in={expanded}
+            timeout={'auto'}
+          >
             <Typography
-              variant={'body1'}
+              variant={'body2'}
+              className={classes.notes}
               onClick={() => setExpanded(!expanded)}
             >
               <span dangerouslySetInnerHTML={{ __html: notes }} />
@@ -376,6 +527,11 @@ const AlbumDetails = (props) => {
           </Collapse>
         </div>
       )}
+
+      {/* Comment section */}
+      {record['comment'] && <CollapsibleComment record={record} />}
+
+      {/* Lightbox */}
       {isLightboxOpen && !imageError && (
         <Lightbox
           imagePadding={50}
@@ -385,7 +541,7 @@ const AlbumDetails = (props) => {
           onCloseRequest={handleCloseLightbox}
         />
       )}
-    </Card>
+    </>
   )
 }
 

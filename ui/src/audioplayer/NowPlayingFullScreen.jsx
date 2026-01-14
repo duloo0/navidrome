@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { useSelector } from 'react-redux'
+import ReactDOM from 'react-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import { useHistory } from 'react-router-dom'
 import {
   Box,
@@ -14,25 +15,74 @@ import CloseIcon from '@material-ui/icons/Close'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import QueueMusicIcon from '@material-ui/icons/QueueMusic'
-import { LoveButton, RatingField } from '../common'
+import LyricsIcon from '@material-ui/icons/MusicNote'
+import { LoveButton, RatingField, ThumbUpButton, ThumbDownButton } from '../common'
+import { setPlayMode } from '../actions'
 import subsonic from '../subsonic'
 import config from '../config'
 import LyricsPanel from './LyricsPanel'
 import SignalPath from './SignalPath'
+import {
+  NowPlayingControls,
+  NowPlayingQualityBadge,
+  NowPlayingMetadataPanel,
+} from './nowplaying'
+
+// Ken Burns animation keyframes
+const kenBurnsKeyframes = {
+  '@keyframes kenBurns': {
+    '0%': {
+      transform: 'scale(1.3) translate(0, 0)',
+    },
+    '25%': {
+      transform: 'scale(1.35) translate(-1%, -1%)',
+    },
+    '50%': {
+      transform: 'scale(1.4) translate(0, -2%)',
+    },
+    '75%': {
+      transform: 'scale(1.35) translate(1%, -1%)',
+    },
+    '100%': {
+      transform: 'scale(1.3) translate(0, 0)',
+    },
+  },
+  '@keyframes fadeIn': {
+    '0%': {
+      opacity: 0,
+      transform: 'scale(0.96)',
+    },
+    '100%': {
+      opacity: 1,
+      transform: 'scale(1)',
+    },
+  },
+  '@keyframes pulseGlow': {
+    '0%, 100%': {
+      boxShadow: '0 32px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(255, 215, 0, 0.15)',
+    },
+    '50%': {
+      boxShadow: '0 32px 80px rgba(0, 0, 0, 0.6), 0 0 80px rgba(255, 215, 0, 0.25)',
+    },
+  },
+}
 
 const useStyles = makeStyles((theme) => ({
+  ...kenBurnsKeyframes,
   root: {
     position: 'fixed',
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1400,
+    width: '100vw',
+    height: '100vh',
+    zIndex: 9999,
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: '$fadeIn 300ms ease-out',
+    backgroundColor: '#000',
   },
-  // Blurred background
+  // Animated blurred background with Ken Burns effect
   backgroundBlur: {
     position: 'absolute',
     top: '-20%',
@@ -41,10 +91,10 @@ const useStyles = makeStyles((theme) => ({
     bottom: '-20%',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    filter: 'blur(80px)',
+    filter: 'blur(100px) saturate(1.2)',
     opacity: 0.5,
-    transform: 'scale(1.4)',
     zIndex: 0,
+    animation: '$kenBurns 30s ease-in-out infinite',
   },
   // Dark gradient overlay
   overlay: {
@@ -55,13 +105,13 @@ const useStyles = makeStyles((theme) => ({
     bottom: 0,
     background: `linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.7) 0%,
-      rgba(0, 0, 0, 0.85) 50%,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0.8) 40%,
       rgba(0, 0, 0, 0.95) 100%
     )`,
     zIndex: 1,
   },
-  // Main content
+  // Main content with fade animation
   content: {
     position: 'relative',
     zIndex: 2,
@@ -91,30 +141,43 @@ const useStyles = makeStyles((theme) => ({
   },
   closeButton: {
     color: 'rgba(255, 255, 255, 0.7)',
+    transition: 'all 150ms ease',
+    '&:hover': {
+      color: '#fff',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      transform: 'scale(1.05)',
+    },
+  },
+  headerButton: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    transition: 'all 150ms ease',
     '&:hover': {
       color: '#fff',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
   },
+  headerButtonActive: {
+    color: '#00FFFF !important',
+  },
   nowPlayingLabel: {
-    fontSize: '0.75rem',
+    fontSize: '0.7rem',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '2px',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   // Main area with album art and info
   mainArea: {
     flex: 1,
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing(6),
+    gap: theme.spacing(8),
     [theme.breakpoints.down('md')]: {
       flexDirection: 'column',
-      gap: theme.spacing(3),
+      gap: theme.spacing(4),
     },
   },
-  // Album art
+  // Album art container
   albumArtContainer: {
     flexShrink: 0,
     [theme.breakpoints.down('md')]: {
@@ -123,24 +186,41 @@ const useStyles = makeStyles((theme) => ({
       justifyContent: 'center',
     },
   },
+  // Larger album art with enhanced shadow
   albumArt: {
-    width: 400,
-    height: 400,
-    borderRadius: 12,
+    width: 500,
+    height: 500,
+    borderRadius: 16,
     boxShadow: '0 32px 80px rgba(0, 0, 0, 0.6)',
     objectFit: 'cover',
+    cursor: 'pointer',
+    transition: 'all 300ms ease',
+    '&:hover': {
+      transform: 'scale(1.02)',
+      boxShadow: '0 40px 100px rgba(0, 0, 0, 0.7)',
+    },
     [theme.breakpoints.down('lg')]: {
+      width: 400,
+      height: 400,
+    },
+    [theme.breakpoints.down('md')]: {
       width: 320,
       height: 320,
     },
-    [theme.breakpoints.down('md')]: {
+    [theme.breakpoints.down('sm')]: {
       width: 280,
       height: 280,
     },
-    [theme.breakpoints.down('sm')]: {
-      width: 240,
-      height: 240,
-    },
+  },
+  // Hi-res glow effect
+  albumArtHiRes: {
+    animation: '$pulseGlow 4s ease-in-out infinite',
+    border: '1px solid rgba(255, 215, 0, 0.2)',
+  },
+  // Lossless subtle glow
+  albumArtLossless: {
+    boxShadow: '0 32px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 255, 136, 0.1)',
+    border: '1px solid rgba(0, 255, 136, 0.15)',
   },
   // Info section
   infoSection: {
@@ -148,75 +228,57 @@ const useStyles = makeStyles((theme) => ({
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing(2),
+    gap: theme.spacing(1.5),
     [theme.breakpoints.down('md')]: {
       alignItems: 'center',
       textAlign: 'center',
     },
   },
   songTitle: {
-    fontSize: 'clamp(1.5rem, 4vw, 3rem)',
+    fontSize: 'clamp(2rem, 5vw, 4rem)',
     fontWeight: 700,
-    lineHeight: 1.2,
+    lineHeight: 1.1,
     color: '#fff',
     wordBreak: 'break-word',
+    textShadow: '0 4px 24px rgba(0, 0, 0, 0.5)',
+    letterSpacing: '-0.02em',
   },
   artistName: {
-    fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+    fontSize: 'clamp(1.25rem, 3vw, 2rem)',
     fontWeight: 500,
     color: 'rgba(255, 255, 255, 0.85)',
     cursor: 'pointer',
+    transition: 'color 150ms ease',
     '&:hover': {
       color: '#00FFFF',
     },
   },
   albumName: {
-    fontSize: 'clamp(0.875rem, 1.5vw, 1.125rem)',
+    fontSize: 'clamp(1rem, 2vw, 1.5rem)',
     color: 'rgba(255, 255, 255, 0.6)',
     cursor: 'pointer',
+    transition: 'color 150ms ease',
     '&:hover': {
       color: 'rgba(255, 255, 255, 0.9)',
     },
   },
-  // Metadata row (year, format, etc)
-  metaRow: {
+  // Quality and metadata row
+  qualityRow: {
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(2),
     flexWrap: 'wrap',
+    marginTop: theme.spacing(1),
     [theme.breakpoints.down('md')]: {
       justifyContent: 'center',
     },
   },
-  metaItem: {
+  playCount: {
     fontSize: '0.75rem',
     fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.4)',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
-  },
-  qualityBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '4px 10px',
-    borderRadius: 4,
-    fontSize: '0.7rem',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    color: 'rgba(255, 255, 255, 0.8)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-  },
-  qualityBadgeLossless: {
-    backgroundColor: 'rgba(0, 255, 136, 0.15)',
-    color: '#00FF88',
-    borderColor: '#00FF88',
-  },
-  qualityBadgeHiRes: {
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    color: '#FFD700',
-    borderColor: '#FFD700',
   },
   // Actions row
   actionsRow: {
@@ -228,27 +290,34 @@ const useStyles = makeStyles((theme) => ({
       justifyContent: 'center',
     },
   },
-  // Progress section
+  // Progress section at bottom
   progressSection: {
     marginTop: 'auto',
     paddingTop: theme.spacing(3),
   },
   progressBar: {
     color: '#fff',
-    height: 4,
+    height: 6,
+    transition: 'height 150ms ease',
+    '&:hover': {
+      height: 8,
+    },
     '& .MuiSlider-thumb': {
-      width: 12,
-      height: 12,
+      width: 16,
+      height: 16,
+      transition: 'all 150ms ease',
       '&:hover': {
-        boxShadow: '0 0 0 8px rgba(255, 255, 255, 0.16)',
+        boxShadow: '0 0 0 10px rgba(255, 255, 255, 0.16)',
       },
     },
     '& .MuiSlider-track': {
-      height: 4,
+      height: 'inherit',
+      borderRadius: 3,
     },
     '& .MuiSlider-rail': {
-      height: 4,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      height: 'inherit',
+      borderRadius: 3,
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
     },
   },
   timeRow: {
@@ -258,39 +327,28 @@ const useStyles = makeStyles((theme) => ({
   },
   timeText: {
     fontSize: '0.75rem',
-    fontFamily: '"JetBrains Mono", monospace',
+    fontFamily: '"JetBrains Mono", "SF Mono", monospace',
     color: 'rgba(255, 255, 255, 0.5)',
+    letterSpacing: '0.05em',
   },
-  // Expandable panels
-  expandSection: {
+  // Expandable panels section
+  panelsSection: {
     marginTop: theme.spacing(2),
-  },
-  expandHeader: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing(2),
-    cursor: 'pointer',
-    padding: theme.spacing(1),
-    borderRadius: theme.shape.borderRadius,
-    '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    },
+    flexDirection: 'column',
+    gap: theme.spacing(1),
   },
-  expandLabel: {
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    color: 'rgba(255, 255, 255, 0.5)',
+  panelWrapper: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
   },
   lyricsContainer: {
-    maxHeight: 300,
+    maxHeight: 350,
     overflow: 'auto',
     padding: theme.spacing(2),
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: theme.shape.borderRadius,
-    marginTop: theme.spacing(1),
+    scrollBehavior: 'smooth',
   },
 }))
 
@@ -318,7 +376,9 @@ const isHiRes = (song) => {
 const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
   const classes = useStyles()
   const history = useHistory()
+  const dispatch = useDispatch()
   const isSmall = useMediaQuery((theme) => theme.breakpoints.down('sm'))
+  const isMedium = useMediaQuery((theme) => theme.breakpoints.down('md'))
 
   const playerState = useSelector((state) => state.player)
   const current = playerState?.current || {}
@@ -326,18 +386,26 @@ const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
 
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
   const [showLyrics, setShowLyrics] = useState(false)
   const [showSignalPath, setShowSignalPath] = useState(false)
 
   // Get cover art URL
   const coverArtUrl = useMemo(() => {
-    if (song?.albumId) {
-      return subsonic.getCoverArtUrl({ coverArt: song.albumId }, 600)
+    if (song?.id) {
+      return subsonic.getCoverArtUrl(song, 800)
     }
     return null
-  }, [song?.albumId])
+  }, [song])
 
-  // Track audio progress
+  // Determine album art quality class
+  const albumArtClass = useMemo(() => {
+    if (isHiRes(song)) return classes.albumArtHiRes
+    if (isLossless(song?.suffix)) return classes.albumArtLossless
+    return ''
+  }, [song, classes])
+
+  // Track audio progress and playing state
   useEffect(() => {
     if (!audioInstance) return
 
@@ -346,12 +414,24 @@ const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
       setDuration(audioInstance.duration || 0)
     }
 
+    const updatePlayState = () => {
+      setIsPlaying(!audioInstance.paused)
+    }
+
     audioInstance.addEventListener('timeupdate', updateProgress)
     audioInstance.addEventListener('loadedmetadata', updateProgress)
+    audioInstance.addEventListener('play', updatePlayState)
+    audioInstance.addEventListener('pause', updatePlayState)
+
+    // Initial state
+    updateProgress()
+    updatePlayState()
 
     return () => {
       audioInstance.removeEventListener('timeupdate', updateProgress)
       audioInstance.removeEventListener('loadedmetadata', updateProgress)
+      audioInstance.removeEventListener('play', updatePlayState)
+      audioInstance.removeEventListener('pause', updatePlayState)
     }
   }, [audioInstance])
 
@@ -362,6 +442,54 @@ const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
       setProgress(value)
     }
   }, [audioInstance, duration])
+
+  // Handle lyrics line click for seek
+  const handleLyricsSeek = useCallback((time) => {
+    if (audioInstance) {
+      audioInstance.currentTime = time
+      setProgress(time)
+    }
+  }, [audioInstance])
+
+  // Playback controls
+  const handlePlayPause = useCallback(() => {
+    if (!audioInstance) return
+    if (audioInstance.paused) {
+      audioInstance.play()
+    } else {
+      audioInstance.pause()
+    }
+  }, [audioInstance])
+
+  const handlePrevious = useCallback(() => {
+    if (audioInstance) {
+      audioInstance.playPrev()
+    }
+  }, [audioInstance])
+
+  const handleNext = useCallback(() => {
+    if (audioInstance) {
+      audioInstance.playNext()
+    }
+  }, [audioInstance])
+
+  // Shuffle toggle
+  const handleShuffleToggle = useCallback(() => {
+    const newMode = playerState.shuffle ? 'order' : 'shufflePlay'
+    dispatch(setPlayMode(newMode))
+  }, [dispatch, playerState.shuffle])
+
+  // Repeat toggle: none -> all -> one -> none
+  const handleRepeatToggle = useCallback(() => {
+    const currentMode = playerState.mode
+    let newMode = 'order'
+    if (currentMode !== 'orderLoop' && currentMode !== 'singleLoop') {
+      newMode = 'orderLoop' // none -> all
+    } else if (currentMode === 'orderLoop') {
+      newMode = 'singleLoop' // all -> one
+    }
+    dispatch(setPlayMode(newMode))
+  }, [dispatch, playerState.mode])
 
   // Navigate to artist
   const handleArtistClick = useCallback(() => {
@@ -384,6 +512,9 @@ const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose()
+      } else if (e.key === ' ' && e.target === document.body) {
+        e.preventDefault()
+        handlePlayPause()
       }
     }
 
@@ -391,189 +522,194 @@ const NowPlayingFullScreen = ({ open, onClose, audioInstance }) => {
       document.addEventListener('keydown', handleKeyDown)
       return () => document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [open, onClose])
+  }, [open, onClose, handlePlayPause])
 
   if (!open) return null
 
   const subtitle = song?.tags?.['subtitle']
   const title = song?.title + (subtitle ? ` (${subtitle})` : '')
-  const suffix = song?.suffix?.toUpperCase()
-  const bitRate = song?.bitRate
-  const sampleRate = song?.sampleRate
-  const bitDepth = song?.bitDepth
 
-  return (
+  return ReactDOM.createPortal(
     <div className={classes.root}>
-      {/* Blurred background */}
-      {coverArtUrl && (
-        <div
-          className={classes.backgroundBlur}
-          style={{ backgroundImage: `url(${coverArtUrl})` }}
-        />
-      )}
+        {/* Animated blurred background with Ken Burns effect */}
+        {coverArtUrl && (
+          <div
+            className={classes.backgroundBlur}
+            style={{ backgroundImage: `url(${coverArtUrl})` }}
+          />
+        )}
 
-      {/* Dark overlay */}
-      <div className={classes.overlay} />
+        {/* Dark overlay */}
+        <div className={classes.overlay} />
 
-      {/* Header */}
-      <div className={classes.header}>
-        <Typography className={classes.nowPlayingLabel}>
-          Now Playing
-        </Typography>
-        <Box display="flex" alignItems="center" gap={1}>
-          <IconButton
-            size="small"
-            className={classes.closeButton}
-            onClick={() => setShowSignalPath(!showSignalPath)}
-            title="Signal Path"
-          >
-            <QueueMusicIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            className={classes.closeButton}
-            onClick={onClose}
-            title="Close (Esc)"
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </div>
-
-      {/* Main content */}
-      <div className={classes.content}>
-        <div className={classes.mainArea}>
-          {/* Album Art */}
-          <div className={classes.albumArtContainer}>
-            {coverArtUrl ? (
-              <img
-                src={coverArtUrl}
-                alt={song?.album || 'Album Art'}
-                className={classes.albumArt}
-                onClick={handleAlbumClick}
-                style={{ cursor: 'pointer' }}
-              />
-            ) : (
-              <div className={classes.albumArt} style={{ backgroundColor: '#333' }} />
+        {/* Header */}
+        <div className={classes.header}>
+          <Typography className={classes.nowPlayingLabel}>
+            Now Playing
+          </Typography>
+          <Box display="flex" alignItems="center" style={{ gap: 4 }}>
+            {song?.lyrics && (
+              <IconButton
+                size="small"
+                className={`${classes.headerButton} ${showLyrics ? classes.headerButtonActive : ''}`}
+                onClick={() => setShowLyrics(!showLyrics)}
+                title="Lyrics"
+              >
+                <LyricsIcon fontSize="small" />
+              </IconButton>
             )}
-          </div>
-
-          {/* Song Info */}
-          <div className={classes.infoSection}>
-            <Typography className={classes.songTitle}>
-              {title || 'Unknown Title'}
-            </Typography>
-
-            <Typography
-              className={classes.artistName}
-              onClick={handleArtistClick}
+            <IconButton
+              size="small"
+              className={`${classes.headerButton} ${showSignalPath ? classes.headerButtonActive : ''}`}
+              onClick={() => setShowSignalPath(!showSignalPath)}
+              title="Signal Path"
             >
-              {song?.artist || 'Unknown Artist'}
-            </Typography>
-
-            <Typography
-              className={classes.albumName}
-              onClick={handleAlbumClick}
+              <QueueMusicIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              className={classes.closeButton}
+              onClick={onClose}
+              title="Close (Esc)"
             >
-              {song?.album || 'Unknown Album'}
-              {song?.year ? ` (${song.year})` : ''}
-            </Typography>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </div>
 
-            {/* Metadata */}
-            <div className={classes.metaRow}>
-              {suffix && (
-                <span
-                  className={`${classes.qualityBadge} ${
-                    isHiRes(song) ? classes.qualityBadgeHiRes :
-                    isLossless(suffix?.toLowerCase()) ? classes.qualityBadgeLossless : ''
-                  }`}
-                >
-                  {suffix}
-                  {bitRate && !isLossless(suffix?.toLowerCase()) ? ` ${bitRate}` : ''}
-                </span>
-              )}
-              {sampleRate && (
-                <span className={classes.metaItem}>
-                  {(sampleRate / 1000).toFixed(1)}kHz
-                </span>
-              )}
-              {bitDepth && (
-                <span className={classes.metaItem}>
-                  {bitDepth}-bit
-                </span>
-              )}
-              {song?.playCount > 0 && (
-                <span className={classes.metaItem}>
-                  {song.playCount} plays
-                </span>
+        {/* Main content */}
+        <div className={classes.content}>
+          <div className={classes.mainArea}>
+            {/* Album Art */}
+            <div className={classes.albumArtContainer}>
+              {coverArtUrl ? (
+                <img
+                  src={coverArtUrl}
+                  alt={song?.album || 'Album Art'}
+                  className={`${classes.albumArt} ${albumArtClass}`}
+                  onClick={handleAlbumClick}
+                />
+              ) : (
+                <div className={classes.albumArt} style={{ backgroundColor: '#333' }} />
               )}
             </div>
 
-            {/* Actions */}
-            <div className={classes.actionsRow}>
-              <LoveButton
-                record={song}
-                resource="song"
-                size="default"
-                color="primary"
-              />
-              {config.enableStarRating && (
-                <RatingField
+            {/* Song Info */}
+            <div className={classes.infoSection}>
+              <Typography className={classes.songTitle}>
+                {title || 'Unknown Title'}
+              </Typography>
+
+              <Typography
+                className={classes.artistName}
+                onClick={handleArtistClick}
+              >
+                {song?.artist || 'Unknown Artist'}
+              </Typography>
+
+              <Typography
+                className={classes.albumName}
+                onClick={handleAlbumClick}
+              >
+                {song?.album || 'Unknown Album'}
+                {song?.year ? ` • ${song.year}` : ''}
+              </Typography>
+
+              {/* Quality Badge */}
+              <div className={classes.qualityRow}>
+                <NowPlayingQualityBadge song={song} />
+                {song?.playCount > 0 && (
+                  <span className={classes.playCount}>
+                    {song.playCount} plays
+                  </span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className={classes.actionsRow}>
+                <LoveButton
+                  record={song}
+                  resource="song"
+                  size="default"
+                  color="primary"
+                />
+                <ThumbDownButton
                   record={song}
                   resource="song"
                   size="small"
                 />
-              )}
-            </div>
-
-            {/* Signal Path */}
-            <Collapse in={showSignalPath}>
-              <SignalPath song={song} />
-            </Collapse>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className={classes.progressSection}>
-          <Slider
-            className={classes.progressBar}
-            value={progress}
-            max={duration || 100}
-            onChange={handleSeek}
-          />
-          <div className={classes.timeRow}>
-            <Typography className={classes.timeText}>
-              {formatTime(progress)}
-            </Typography>
-            <Typography className={classes.timeText}>
-              {formatTime(duration)}
-            </Typography>
-          </div>
-        </div>
-
-        {/* Lyrics toggle */}
-        {song?.lyrics && (
-          <div className={classes.expandSection}>
-            <div
-              className={classes.expandHeader}
-              onClick={() => setShowLyrics(!showLyrics)}
-            >
-              <Typography className={classes.expandLabel}>
-                Lyrics
-              </Typography>
-              {showLyrics ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </div>
-            <Collapse in={showLyrics}>
-              <div className={classes.lyricsContainer}>
-                <LyricsPanel
-                  lyrics={song.lyrics}
-                  currentTime={progress}
+                <ThumbUpButton
+                  record={song}
+                  resource="song"
+                  size="small"
                 />
+                {config.enableStarRating && (
+                  <RatingField
+                    record={song}
+                    resource="song"
+                    size="small"
+                  />
+                )}
+              </div>
+
+              {/* Playback Controls */}
+              <NowPlayingControls
+                isPlaying={isPlaying}
+                shuffle={playerState?.shuffle}
+                repeatMode={playerState?.mode === 'orderLoop' ? 'all' : playerState?.mode === 'singleLoop' ? 'one' : 'none'}
+                onPlayPause={handlePlayPause}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+                onShuffleToggle={handleShuffleToggle}
+                onRepeatToggle={handleRepeatToggle}
+              />
+
+              {/* Signal Path - Collapsible */}
+              <Collapse in={showSignalPath}>
+                <SignalPath song={song} />
+              </Collapse>
+
+              {/* Metadata Panel */}
+              <NowPlayingMetadataPanel song={song} />
+            </div>
+          </div>
+
+          {/* Lyrics - Collapsible panel at bottom */}
+          {song?.lyrics && (
+            <Collapse in={showLyrics}>
+              <div className={classes.panelsSection}>
+                <div className={classes.panelWrapper}>
+                  <div className={classes.lyricsContainer}>
+                    <LyricsPanel
+                      lyrics={song.lyrics}
+                      currentTime={progress}
+                      onLineClick={handleLyricsSeek}
+                    />
+                  </div>
+                </div>
               </div>
             </Collapse>
+          )}
+
+          {/* Progress */}
+          <div className={classes.progressSection}>
+            <Slider
+              className={classes.progressBar}
+              value={progress}
+              max={duration || 100}
+              onChange={handleSeek}
+            />
+            <div className={classes.timeRow}>
+              <Typography className={classes.timeText}>
+                {formatTime(progress)}
+              </Typography>
+              <Typography className={classes.timeText}>
+                {formatTime(duration)}
+              </Typography>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      </div>,
+    document.body
   )
 }
 

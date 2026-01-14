@@ -7,41 +7,119 @@ const useStyles = makeStyles((theme) => ({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing(1),
-    padding: theme.spacing(1),
+    gap: theme.spacing(0.5),
+    padding: theme.spacing(2),
+    position: 'relative',
   },
   line: {
-    fontSize: '0.95rem',
-    lineHeight: 1.6,
-    color: 'rgba(255, 255, 255, 0.4)',
-    transition: 'all 300ms ease',
+    fontSize: '1rem',
+    lineHeight: 1.8,
+    color: 'rgba(255, 255, 255, 0.35)',
+    transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
     cursor: 'default',
-    padding: theme.spacing(0.5, 1),
-    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1, 2),
+    borderRadius: 8,
+    textAlign: 'center',
+    position: 'relative',
     '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      backgroundColor: 'rgba(255, 255, 255, 0.06)',
+      color: 'rgba(255, 255, 255, 0.5)',
+    },
+  },
+  lineClickable: {
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: 'rgba(0, 255, 255, 0.08)',
+      color: 'rgba(255, 255, 255, 0.7)',
+    },
+    '&:active': {
+      transform: 'scale(0.98)',
     },
   },
   activeLine: {
-    fontSize: '1.1rem',
+    fontSize: '1.25rem',
     fontWeight: 600,
     color: '#fff',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    textShadow: '0 2px 12px rgba(255, 255, 255, 0.2)',
+    transform: 'scale(1.02)',
+    padding: theme.spacing(1.5, 2),
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: 3,
+      height: '60%',
+      backgroundColor: '#00FFFF',
+      borderRadius: 2,
+    },
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+      color: '#fff',
+    },
   },
   passedLine: {
     color: 'rgba(255, 255, 255, 0.55)',
+  },
+  upcomingLine: {
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  // For the next line (preview)
+  nextLine: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '1.05rem',
   },
   instrumental: {
     fontStyle: 'italic',
     color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
-    padding: theme.spacing(2, 0),
+    padding: theme.spacing(4, 0),
+    fontSize: '0.9rem',
+    letterSpacing: '0.05em',
   },
   noLyrics: {
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(255, 255, 255, 0.35)',
     padding: theme.spacing(4, 0),
     fontStyle: 'italic',
+    fontSize: '0.9rem',
+  },
+  // Fade gradient at top and bottom
+  fadeOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 60,
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+  fadeTop: {
+    top: 0,
+    background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)',
+  },
+  fadeBottom: {
+    bottom: 0,
+    background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+  },
+  // Timestamp display
+  timestamp: {
+    fontSize: '0.65rem',
+    fontFamily: '"JetBrains Mono", monospace',
+    color: 'rgba(255, 255, 255, 0.25)',
+    marginLeft: theme.spacing(1),
+    opacity: 0,
+    transition: 'opacity 200ms ease',
+  },
+  lineWithTimestamp: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(0.5),
+    '&:hover $timestamp': {
+      opacity: 1,
+    },
   },
 }))
 
@@ -88,6 +166,14 @@ const parseLrcLyrics = (lyrics) => {
 const isLrcFormat = (lyrics) => {
   if (!lyrics) return false
   return /\[\d{2}:\d{2}/.test(lyrics)
+}
+
+// Format time for display
+const formatTime = (seconds) => {
+  if (!seconds && seconds !== 0) return ''
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
 const LyricsPanel = ({ lyrics, currentTime, onLineClick }) => {
@@ -169,23 +255,41 @@ const LyricsPanel = ({ lyrics, currentTime, onLineClick }) => {
     )
   }
 
+  const getLineClass = (index) => {
+    const isActive = index === currentLineIndex
+    const isPassed = isSynced && index < currentLineIndex
+    const isNext = isSynced && index === currentLineIndex + 1
+    const isClickable = isSynced && onLineClick
+
+    let classNames = classes.line
+    if (isClickable) classNames += ` ${classes.lineClickable}`
+    if (isActive) classNames += ` ${classes.activeLine}`
+    else if (isPassed) classNames += ` ${classes.passedLine}`
+    else if (isNext) classNames += ` ${classes.nextLine}`
+    else classNames += ` ${classes.upcomingLine}`
+
+    return classNames
+  }
+
   return (
     <div ref={containerRef} className={classes.container}>
       {parsedLyrics.map((line, index) => {
         const isActive = index === currentLineIndex
-        const isPassed = isSynced && index < currentLineIndex
 
         return (
-          <Typography
+          <div
             key={`${index}-${line.time}`}
             ref={isActive ? activeLineRef : null}
-            className={`${classes.line} ${
-              isActive ? classes.activeLine : ''
-            } ${isPassed ? classes.passedLine : ''}`}
+            className={`${getLineClass(index)} ${isSynced ? classes.lineWithTimestamp : ''}`}
             onClick={() => onLineClick && isSynced && onLineClick(line.time)}
           >
-            {line.text}
-          </Typography>
+            <span>{line.text}</span>
+            {isSynced && line.time !== null && (
+              <span className={classes.timestamp}>
+                {formatTime(line.time)}
+              </span>
+            )}
+          </div>
         )
       })}
     </div>

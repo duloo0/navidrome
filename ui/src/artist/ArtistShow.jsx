@@ -1,5 +1,5 @@
 import React, { useState, createElement, useEffect } from 'react'
-import { useMediaQuery, withWidth } from '@material-ui/core'
+import { useMediaQuery, withWidth, Typography } from '@material-ui/core'
 import {
   useShowController,
   ShowContextProvider,
@@ -13,6 +13,7 @@ import subsonic from '../subsonic'
 import AlbumGridView from '../album/AlbumGridView'
 import MobileArtistDetails from './MobileArtistDetails'
 import ArtistHero from './ArtistHero'
+import ArtistTopTracks from './ArtistTopTracks'
 import { useAlbumsPerPage, useResourceRefresh, Title } from '../common/index.js'
 import ArtistActions from './ArtistActions'
 import { makeStyles } from '@material-ui/core'
@@ -40,6 +41,20 @@ const useStyles = makeStyles(
       paddingLeft: '.75rem',
       [theme.breakpoints.down('xs')]: {
         padding: '.5rem',
+      },
+    },
+    sectionHeader: {
+      fontSize: '20px',
+      fontWeight: 600,
+      color: theme.palette.text.primary,
+      letterSpacing: '-0.01em',
+      padding: theme.spacing(3),
+      paddingBottom: 0,
+      maxWidth: '1800px',
+      margin: '0 auto',
+      [theme.breakpoints.down('sm')]: {
+        padding: theme.spacing(2),
+        paddingBottom: 0,
       },
     },
   }),
@@ -125,6 +140,14 @@ const ArtistShowLayout = (props) => {
         <div className={classes.actionsContainer}>
           <ArtistActions record={record} className={classes.actions} />
         </div>
+      )}
+      {record && (
+        <ArtistTopTracks artistName={record.name} maxTracks={5} />
+      )}
+      {record && count > 0 && (
+        <Typography className={classes.sectionHeader}>
+          Discography
+        </Typography>
       )}
       {record && (
         <ReferenceManyField

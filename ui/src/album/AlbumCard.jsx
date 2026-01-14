@@ -21,11 +21,12 @@ const useStyles = makeStyles(
       backgroundColor: theme.overrides?.NDAlbumGridView?.albumContainer?.backgroundColor ||
         (theme.palette.type === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
       transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+      cursor: 'pointer',
       '&:hover': {
         backgroundColor: theme.overrides?.NDAlbumGridView?.albumContainer?.['&:hover']?.backgroundColor ||
-          (theme.palette.type === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
-        transform: 'translateY(-4px)',
-        boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+          (theme.palette.type === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'),
+        transform: 'translateY(-6px)',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
       },
       '&:hover $playOverlay': {
         opacity: 1,
@@ -33,6 +34,9 @@ const useStyles = makeStyles(
       },
       '&:hover $contextMenu': {
         opacity: 1,
+      },
+      '&:hover $cover': {
+        transform: 'scale(1.02)',
       },
     },
     missingAlbum: {
@@ -44,13 +48,14 @@ const useStyles = makeStyles(
       overflow: 'hidden',
       borderRadius: '8px',
       aspectRatio: '1',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     },
     cover: {
       display: 'block',
       width: '100%',
       height: '100%',
       objectFit: 'cover',
-      transition: 'opacity 0.3s ease-in-out, transform 0.3s ease',
+      transition: 'opacity 0.3s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     coverLoading: {
       opacity: 0.5,
@@ -58,32 +63,33 @@ const useStyles = makeStyles(
     // Play button overlay
     playOverlay: {
       position: 'absolute',
-      bottom: '8px',
-      right: '8px',
+      bottom: '12px',
+      right: '12px',
       opacity: 0,
-      transform: 'translateY(8px)',
-      transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+      transform: 'translateY(10px)',
+      transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
       zIndex: 2,
     },
     playButton: {
       backgroundColor: theme.overrides?.NDAlbumGridView?.albumPlayButton?.backgroundColor ||
         theme.palette.primary.main,
       borderRadius: '50%',
-      width: '44px',
-      height: '44px',
+      width: '48px',
+      height: '48px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
       transition: 'all 150ms ease',
       '&:hover': {
-        transform: 'scale(1.08)',
+        transform: 'scale(1.1)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
         backgroundColor: theme.overrides?.NDAlbumGridView?.albumPlayButton?.['&:hover']?.background ||
           theme.palette.primary.main,
       },
       '& svg': {
         color: theme.palette.type === 'dark' ? '#000' : '#fff',
-        fontSize: '22px',
+        fontSize: '24px',
       },
     },
     // Context menu (three dots)
@@ -119,7 +125,7 @@ const useStyles = makeStyles(
     },
     // Album info section
     albumInfo: {
-      marginTop: '10px',
+      marginTop: '12px',
       textDecoration: 'none',
       display: 'block',
     },
@@ -131,25 +137,34 @@ const useStyles = makeStyles(
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
-      lineHeight: 1.3,
+      lineHeight: 1.4,
       marginTop: theme.overrides?.NDAlbumGridView?.albumName?.marginTop || '8px',
+      transition: 'color 0.15s ease',
+      '&:hover': {
+        color: theme.palette.primary.main,
+      },
     },
     albumVersion: {
       fontSize: '11px',
-      color: theme.palette.type === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+      color: theme.palette.type === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)',
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
-      marginTop: '2px',
+      marginTop: '3px',
+      fontStyle: 'italic',
     },
     albumSubtitle: {
-      fontSize: theme.overrides?.NDAlbumGridView?.albumSubtitle?.fontSize || '12px',
+      fontSize: theme.overrides?.NDAlbumGridView?.albumSubtitle?.fontSize || '13px',
       color: theme.overrides?.NDAlbumGridView?.albumSubtitle?.color ||
-        (theme.palette.type === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'),
+        (theme.palette.type === 'dark' ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)'),
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
       marginTop: theme.overrides?.NDAlbumGridView?.albumSubtitle?.marginTop || '4px',
+      transition: 'color 0.15s ease',
+      '& a:hover': {
+        color: theme.palette.primary.main,
+      },
     },
     // Link styles
     coverLink: {

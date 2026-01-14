@@ -619,111 +619,190 @@ export default {
         '& .react-jinke-music-player-main': {
           fontFamily: `${typography.fontFamily.primary} !important`,
         },
-        // Mini player bar
+        // Mini player bar - enhanced styling
         '& .react-jinke-music-player': {
           backgroundColor: `${colors.background.paper} !important`,
           borderTop: `1px solid ${colors.border.subtle} !important`,
+          backdropFilter: 'blur(20px) !important',
+          transition: `${animations.transitions.all.normal} !important`,
+        },
+        // Mini player album art
+        '& .react-jinke-music-player .img-content': {
+          borderRadius: `${borders.radius.md} !important`,
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4) !important',
+          transition: `${animations.transitions.all.normal} !important`,
+          cursor: 'pointer !important',
+          '&:hover': {
+            transform: 'scale(1.05) !important',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5) !important',
+          },
         },
         // Full-screen panel
         '& .music-player-panel': {
           background: `linear-gradient(180deg, ${colors.background.elevated} 0%, ${colors.background.default} 100%) !important`,
         },
-        // Album artwork
-        '& .img-content, & .img-rotate': {
-          borderRadius: `${borders.radius.lg} !important`,
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6) !important',
-        },
+        // Album artwork in panel
         '& .music-player-panel .img-content': {
           width: '300px !important',
           height: '300px !important',
           borderRadius: `${borders.radius.xl} !important`,
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6) !important',
         },
-        // Song title
+        // Song title in mini player
         '& .audio-title': {
           color: `${colors.text.primary} !important`,
           fontWeight: `${typography.fontWeight.medium} !important`,
+          transition: `color ${animations.duration.fast} ease !important`,
+          '&:hover': {
+            color: `${colors.accent.cyan} !important`,
+          },
         },
-        // Progress bar
+        // Progress bar - enhanced with hover expand
         '& .progress-bar-content': {
           backgroundColor: `${colors.border.subtle} !important`,
           borderRadius: `${borders.radius.full} !important`,
           height: '4px !important',
+          transition: 'height 150ms ease !important',
+          '&:hover': {
+            height: '6px !important',
+          },
         },
         '& .progress-bar-content .progress': {
           backgroundColor: `${colors.text.primary} !important`,
           borderRadius: `${borders.radius.full} !important`,
+          transition: 'background-color 150ms ease !important',
         },
         '& .progress-bar-content:hover .progress': {
           backgroundColor: `${colors.accent.cyan} !important`,
+        },
+        // Progress bar thumb
+        '& .progress-bar-content .progress-load-bar': {
+          backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
         },
         // Time display
         '& .current-time, & .duration': {
           color: `${colors.text.tertiary} !important`,
           fontSize: `${typography.fontSize.xs} !important`,
           fontFamily: `${typography.fontFamily.mono} !important`,
+          letterSpacing: '0.03em !important',
         },
         // Control buttons
         '& .react-jinke-music-player-main svg': {
           color: `${colors.text.secondary} !important`,
-          transition: `${animations.transitions.all.fast} !important`,
+          transition: `all ${animations.duration.fast} ease !important`,
         },
         '& .react-jinke-music-player-main svg:hover': {
           color: `${colors.text.primary} !important`,
+          transform: 'scale(1.1) !important',
         },
-        // Play/Pause button
+        // Skip buttons
+        '& .prev-audio, & .next-audio': {
+          opacity: '0.8 !important',
+          transition: `all ${animations.duration.fast} ease !important`,
+          '&:hover': {
+            opacity: '1 !important',
+          },
+        },
+        // Play/Pause button - enhanced
         '& .play-btn, & .pause-btn': {
-          width: '56px !important',
-          height: '56px !important',
+          width: '52px !important',
+          height: '52px !important',
           borderRadius: `${borders.radius.full} !important`,
           backgroundColor: `${colors.text.primary} !important`,
-          boxShadow: `${borders.shadows.md} !important`,
+          boxShadow: '0 4px 20px rgba(255, 255, 255, 0.15) !important',
+          transition: `all ${animations.duration.normal} ${animations.easing.smooth} !important`,
         },
         '& .play-btn:hover, & .pause-btn:hover': {
-          transform: 'scale(1.05) !important',
-          boxShadow: `${borders.shadows.lg} !important`,
+          transform: 'scale(1.08) !important',
+          boxShadow: '0 6px 28px rgba(255, 255, 255, 0.25) !important',
+        },
+        '& .play-btn:active, & .pause-btn:active': {
+          transform: 'scale(0.98) !important',
         },
         '& .play-btn svg, & .pause-btn svg': {
           color: `${colors.background.default} !important`,
         },
-        // Volume slider
+        // Volume control
+        '& .sound-operation': {
+          transition: `opacity ${animations.duration.fast} ease !important`,
+        },
+        '& .rc-slider': {
+          transition: `all ${animations.duration.fast} ease !important`,
+        },
         '& .rc-slider-rail': {
           backgroundColor: `${colors.border.subtle} !important`,
+          borderRadius: `${borders.radius.full} !important`,
         },
         '& .rc-slider-track': {
           backgroundColor: `${colors.text.primary} !important`,
+          borderRadius: `${borders.radius.full} !important`,
         },
         '& .rc-slider-handle': {
           backgroundColor: `${colors.text.primary} !important`,
           border: 'none !important',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3) !important',
+          transition: `transform ${animations.duration.fast} ease !important`,
+          '&:hover': {
+            transform: 'scale(1.2) !important',
+          },
         },
-        // Playlist panel
+        // Playlist/Queue panel - enhanced
         '& .audio-lists-panel': {
           backgroundColor: `${colors.background.elevated} !important`,
           borderLeft: `1px solid ${colors.border.subtle} !important`,
+          backdropFilter: 'blur(20px) !important',
         },
         '& .audio-lists-panel-header': {
           backgroundColor: `${colors.background.paper} !important`,
           color: `${colors.text.primary} !important`,
+          borderBottom: `1px solid ${colors.border.subtle} !important`,
+          padding: `${spacing.md} !important`,
         },
+        '& .audio-lists-panel-header-title': {
+          fontSize: `${typography.fontSize.sm} !important`,
+          fontWeight: `${typography.fontWeight.semibold} !important`,
+          textTransform: 'uppercase !important',
+          letterSpacing: '0.05em !important',
+        },
+        // Queue items
         '& .audio-item': {
           borderRadius: `${borders.radius.md} !important`,
-          transition: `${animations.transitions.all.fast} !important`,
+          transition: `all ${animations.duration.fast} ease !important`,
+          margin: `${spacing.xxs} ${spacing.sm} !important`,
+          padding: `${spacing.sm} !important`,
         },
-        '& .audio-item:hover, & .audio-item.playing': {
+        '& .audio-item:hover': {
           backgroundColor: `${colors.background.overlay} !important`,
+          transform: 'translateX(4px) !important',
         },
-        // Active states
+        '& .audio-item.playing': {
+          backgroundColor: `${colors.background.overlay} !important`,
+          borderLeft: `3px solid ${colors.accent.cyan} !important`,
+        },
+        '& .audio-item .player-singer': {
+          color: `${colors.text.secondary} !important`,
+          fontSize: `${typography.fontSize.xs} !important`,
+        },
+        // Active states for shuffle/repeat
+        '& .shuffle-btn, & .loop-btn': {
+          transition: `all ${animations.duration.fast} ease !important`,
+        },
         '& .shuffle-btn.active, & .loop-btn.active': {
           color: `${colors.accent.cyan} !important`,
+        },
+        '& .shuffle-btn.active svg, & .loop-btn.active svg': {
+          color: `${colors.accent.cyan} !important`,
+          filter: 'drop-shadow(0 0 4px rgba(0, 255, 255, 0.4)) !important',
         },
         // Toolbar buttons (love, thumbs, save)
         '& .item': {
           '& .MuiIconButton-root': {
             color: `${colors.text.secondary} !important`,
-            transition: `${animations.transitions.all.fast} !important`,
+            transition: `all ${animations.duration.fast} ease !important`,
             '&:hover': {
               color: `${colors.text.primary} !important`,
               backgroundColor: `${colors.background.overlay} !important`,
+              transform: 'scale(1.1) !important',
             },
           },
           '& svg': {
@@ -733,12 +812,25 @@ export default {
         // Loved state
         '& .loved svg, & .MuiIconButton-root.loved svg': {
           color: `${colors.accent.error} !important`,
+          filter: 'drop-shadow(0 0 4px rgba(255, 71, 87, 0.4)) !important',
+        },
+        // Destroy/close button
+        '& .destroy-btn': {
+          opacity: '0.6 !important',
+          transition: `all ${animations.duration.fast} ease !important`,
+          '&:hover': {
+            opacity: '1 !important',
+            color: `${colors.accent.error} !important`,
+          },
         },
         // Mobile adjustments
         '@media screen and (max-width: 768px)': {
           '& .play-btn, & .pause-btn': {
             width: '44px !important',
             height: '44px !important',
+          },
+          '& .react-jinke-music-player .img-content': {
+            borderRadius: `${borders.radius.sm} !important`,
           },
         },
         '@media screen and (min-width: 768px)': {
@@ -1045,6 +1137,73 @@ export default {
         '& .MuiChip-label': {
           fontSize: typography.fontSize.xs,
           textTransform: 'uppercase',
+        },
+      },
+    },
+    // Artist top tracks section
+    NDArtistTopTracks: {
+      container: {
+        backgroundColor: 'transparent',
+      },
+      title: {
+        fontSize: typography.fontSize.xl,
+        fontWeight: typography.fontWeight.semibold,
+        letterSpacing: typography.letterSpacing.tight,
+        color: colors.text.primary,
+      },
+      trackRow: {
+        transition: `all ${animations.duration.fast} ${animations.easing.smooth}`,
+        '&:hover': {
+          backgroundColor: colors.background.overlay,
+        },
+      },
+      trackTitle: {
+        fontWeight: typography.fontWeight.medium,
+        color: colors.text.primary,
+      },
+      trackAlbum: {
+        color: colors.text.tertiary,
+      },
+      duration: {
+        fontFamily: typography.fontFamily.mono,
+        color: colors.text.tertiary,
+      },
+    },
+    // Album card styling
+    NDAlbumCard: {
+      albumContainer: {
+        backgroundColor: colors.background.elevated,
+        borderRadius: borders.radius.lg,
+        transition: `all ${animations.duration.normal} ${animations.easing.smooth}`,
+        '&:hover': {
+          backgroundColor: colors.background.overlay,
+          transform: 'translateY(-6px)',
+          boxShadow: borders.shadows.xl,
+        },
+      },
+      coverWrapper: {
+        borderRadius: borders.radius.md,
+        boxShadow: borders.shadows.md,
+      },
+      albumName: {
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.text.primary,
+        '&:hover': {
+          color: colors.accent.cyan,
+        },
+      },
+      albumSubtitle: {
+        color: colors.text.secondary,
+        '& a:hover': {
+          color: colors.accent.cyan,
+        },
+      },
+      playButton: {
+        backgroundColor: colors.text.primary,
+        boxShadow: borders.shadows.lg,
+        '&:hover': {
+          backgroundColor: colors.text.primary,
+          transform: 'scale(1.1)',
         },
       },
     },
